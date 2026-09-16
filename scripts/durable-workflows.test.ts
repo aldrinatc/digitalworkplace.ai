@@ -1,3 +1,4 @@
+import {hasWorkplaceAdminAccess} from '../apps/chat-core-iq/src/lib/server/workplace-access';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -270,4 +271,11 @@ test('support draft tables deny browser roles and allow only the scoped service 
   assert.equal(r.status,'PENDING_REVIEW');assert.equal(r.version,1);
   await tx`update public.dsq_drafts set status='APPROVED' where id='synthetic-draft'`;
  });
+});
+
+test('workplace authorization supports the production role enum and denies unknown users',async()=>{
+ await sql`insert into public.users (id,clerk_id,role) values ('00000000-0000-4000-8000-000000000002','synthetic-workplace-admin','super_admin') on conflict(id) do update set clerk_id=excluded.clerk_id,role=excluded.role`;
+ assert.equal(await hasWorkplaceAdminAccess('synthetic-workplace-admin'),true);
+ assert.equal(await hasWorkplaceAdminAccess('synthetic-workplace-admin',true),true);
+ assert.equal(await hasWorkplaceAdminAccess('unknown-workplace-user'),false);
 });

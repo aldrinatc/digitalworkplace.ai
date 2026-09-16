@@ -23,7 +23,8 @@ CREATE TABLE dcq.service_requests (
  created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.users(id uuid PRIMARY KEY,clerk_id text,role text,email text);
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname='user_role') THEN CREATE TYPE public.user_role AS ENUM ('user','admin','super_admin'); END IF; END $$;
+CREATE TABLE IF NOT EXISTS public.users(id uuid PRIMARY KEY,clerk_id text,role public.user_role,email text);
 CREATE TABLE IF NOT EXISTS public.projects(id uuid PRIMARY KEY,code text);
 CREATE TABLE IF NOT EXISTS public.user_project_access(user_id uuid,project_id uuid,role text);
 

@@ -2,7 +2,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from './server/database';
+import {hasWorkplaceAdminAccess} from './server/workplace-access';
 
 const issuer = 'https://clerk.digitalworkplace.ai';
 const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`), {
@@ -63,17 +63,7 @@ export async function validateAdminRequest(
         { error: 'Invalid workplace session' },
         { status: 401 },
       );
-    const allowed = strict
-      ? ['admin', 'owner', 'super_admin']
-      : ['admin', 'owner', 'super_admin', 'editor'];
-    const rows = await database()`select exists (
-      select 1 from public.users u where u.clerk_id=${payload.sub}
-        and (u.role = any(${['admin', 'super_admin']}::text[]) or exists (
-          select 1 from public.user_project_access a join public.projects p on p.id=a.project_id
-          where a.user_id=u.id and lower(p.code)='dcq' and a.role=any(${allowed}::text[])
-        ))
-    ) as allowed`;
-    if (rows[0]?.allowed) return null;
+    if (await hasWorkplaceAdminAccess(payload.sub, strict)) return null;
     return NextResponse.json(
       { error: 'Chat Core administrator access is required' },
       { status: 403 },
