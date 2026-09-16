@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { scoreFAQMatch, scoreMatch } from '../apps/chat-core-iq/src/lib/knowledge-ranking.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -105,4 +106,13 @@ test('city hours query cannot be hijacked by generic FAQ keywords or punctuation
   assert.ok(scoreFAQMatch(related, query) > 50);
   assert.equal(scoreMatch({ title: 'Unrelated', content: 'The city has great services' }, query), 0);
   assert.equal(scoreMatch({ title: 'Unrelated', content: 'some text' }, '([*'), 0);
+});
+
+test('verified government-center hours rank first and retain their official citation', () => {
+  const faqs = JSON.parse(readFileSync(new URL('../apps/chat-core-iq/data/demo-faq.json', import.meta.url)));
+  const top = faqs.map(faq => ({ faq, score: scoreFAQMatch(faq, 'What are City Hall hours?') })).sort((a, b) => b.score - a.score)[0];
+  assert.equal(top.faq.id, 'verified-government-center-hours');
+  assert.match(top.faq.verifiedAnswer.en, /City Clerk/);
+  assert.match(top.faq.verifiedAnswer.en, /8 AM–5 PM/);
+  assert.ok(top.faq.verifiedAnswer.en.includes(top.faq.url));
 });

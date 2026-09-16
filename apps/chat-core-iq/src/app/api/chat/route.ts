@@ -109,6 +109,7 @@ function getAnthropic(): Anthropic | null {
 }
 
 interface KnowledgeResult {
+  verifiedAnswer?: Partial<Record<Language, string>>;
   id: string;
   title: string;
   section: string;
@@ -662,7 +663,8 @@ I hope that helps!"
       })),
     ];
 
-    let assistantMessage: string;
+    // Verified, source-cited FAQ answers need no probabilistic regeneration.
+    let assistantMessage = knowledgeResults.find(source => source.verifiedAnswer)?.verifiedAnswer?.[detectedLanguage] || '';
 
     // Get LLM settings from admin panel
     const llmSettings = settings.llm;
@@ -687,7 +689,7 @@ I hope that helps!"
     const useClaudeFallback = llmSettings.backupLLM.startsWith('claude');
 
     // Try primary LLM first, then fallback (ITN 3.2.3 LLM Support)
-    if (useClaude) {
+    if (!assistantMessage && useClaude) {
       const claudeClient = getAnthropic();
       if (claudeClient) {
         try {
@@ -714,7 +716,7 @@ I hope that helps!"
       } else {
         assistantMessage = '';
       }
-    } else {
+    } else if (!assistantMessage) {
       // OpenAI is primary
       try {
         const completion = await getOpenAI().chat.completions.create({

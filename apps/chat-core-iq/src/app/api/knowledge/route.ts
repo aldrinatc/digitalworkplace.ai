@@ -13,6 +13,7 @@ interface Page {
 }
 
 interface DemoFAQ {
+  verifiedAnswer?: Record<string, string>;
   id: string;
   title: string;
   keywords: string[];
@@ -161,6 +162,18 @@ export async function POST(request: NextRequest) {
     .map(faq => ({ faq, score: scoreFAQMatch(faq, query) }))
     .filter(item => item.score > 50)
     .sort((a, b) => b.score - a.score);
+
+  // An explicitly verified FAQ is authoritative for its exact keyword match.
+  // Return its cited answer without adding unrelated pages to the model context.
+  const verified = faqResults.find(({ faq, score }) => faq.verifiedAnswer && score >= 80);
+  if (verified) {
+    const { faq, score } = verified;
+    return NextResponse.json({ query, count: 1, results: [{
+      id: faq.id, title: faq.title, section: faq.section, url: faq.url,
+      content: includeContent ? faq.content : undefined, summary: faq.summary,
+      score, isCurated: true, verifiedAnswer: faq.verifiedAnswer,
+    }] });
+  }
 
   // Filter pages based on domain (multi-URL support for doralpd.com)
   let filteredPages = kb.pages;
