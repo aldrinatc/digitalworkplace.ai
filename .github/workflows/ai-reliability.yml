@@ -29,9 +29,11 @@ jobs:
         with:
           node-version: '22'
       - name: Public sites and authentication boundaries
+        shell: bash
         run: node scripts/check-site-auth-health.mjs | tee site-auth-health.jsonl
       - name: AI and database readiness
         if: always()
+        shell: bash
         run: node scripts/check-ai-health.mjs | tee ai-health.jsonl
       - name: Retain health evidence
         if: always()
