@@ -14,6 +14,8 @@ Code is committed on `codex/deferred-workplace-repairs`, implementation commit `
 
 ## Live inventory and latest evidence
 
+**Heartbeat check — 14:32 UTC / 18:32 Dubai:** all 19 site/auth probes passed on the first attempt, and all six AI/database readiness checks passed. The work GitHub identity remained `aldrinatc` and the cloud workflow remained active. The schedule-event query still returned no runs; the latest successful cloud health run remained `35106177495`, completed at 14:06:01 UTC (about 27 minutes earlier, below the 45-minute stale-monitor threshold). No manual cloud dispatch, application deployment, credential change or database write was performed. The known auth dependency remains unchanged.
+
 Latest full cloud evidence: **14:00:37–14:00:40 UTC / 18:00 Dubai**, all **25 site/auth/AI/database probes passed** in [run 35105590721](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35105590721). A subsequent health-only dispatch [35106177495](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35106177495) also passed. The preceding local run passed at 13:59:35 UTC.
 
 At **13:45:23 UTC / 17:45:23 Dubai**, all **19 public-site/auth probes passed on their first attempt** (six page checks, Clerk signing-key discovery, two main protection checks, and ten anonymous/invalid-token API checks). See [the auth verification record](2026-09-16-auth-verification.md). Existing signed-in main, Support and Chat Core sessions also survived reload during this review. Main admin read access rendered, but the console reported profile-update failures; the pending main repair is still necessary. Fresh login and new-account provisioning are not certified.
@@ -44,7 +46,7 @@ The main protected dashboard returns 404 to a cookieless script; use `/sign-in` 
 - Confirms apparent failures, performs authorized targeted reversible incident repairs, tests/deploys only the affected existing app, and verifies recovery. No unrelated feature deployment when health is unchanged.
 - Notifications remain quiet for unchanged state; notify on a meaningful failure/degradation, completed repair, monitor fault, changed blocker or required user action. Do not repeat unchanged approval requests.
 - Preserve authentication/data, least privilege, approved spending and pending credential/data-flow approvals. No real customer messages/bookings or new credentials. EIDS is unrelated.
-- Registration is verified; a first automatic heartbeat execution has not yet been observed. It depends on host/scheduler availability and is not a staffed 24-hour response service.
+- **First automatic Codex heartbeat verified:** the scheduled wakeup at 14:31:38 UTC ran all 25 probes successfully by approximately 14:32:35 UTC. No outage or production mutation occurred. The local automation still depends on host/scheduler availability and is not a staffed 24-hour response service.
 
 ### ACTIVE expanded GitHub cloud monitor
 
