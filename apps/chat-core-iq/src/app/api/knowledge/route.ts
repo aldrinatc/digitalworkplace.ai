@@ -1,3 +1,4 @@
+import { scoreFAQMatch, scoreMatch } from '@/lib/knowledge-ranking';
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -62,88 +63,6 @@ try {
   }
 } catch {
   // Tyler FAQs not available
-}
-
-// Score FAQ match based on keywords
-function scoreFAQMatch(faq: DemoFAQ, query: string): number {
-  const lowerQuery = query.toLowerCase();
-  const words = lowerQuery.split(/\s+/).filter(w => w.length > 2);
-
-  let score = 0;
-
-  // Check keyword matches (highest priority)
-  for (const keyword of faq.keywords) {
-    const lowerKeyword = keyword.toLowerCase();
-    // Exact keyword match
-    if (lowerQuery.includes(lowerKeyword)) {
-      score += 50;
-    }
-    // Word-by-word keyword match
-    for (const word of words) {
-      if (lowerKeyword.includes(word) || word.includes(lowerKeyword)) {
-        score += 25;
-      }
-    }
-  }
-
-  // Title match
-  const lowerTitle = faq.title.toLowerCase();
-  if (lowerTitle.includes(lowerQuery)) {
-    score += 40;
-  }
-  for (const word of words) {
-    if (lowerTitle.includes(word)) {
-      score += 15;
-    }
-  }
-
-  // Content match
-  const lowerContent = faq.content.toLowerCase();
-  for (const word of words) {
-    if (lowerContent.includes(word)) {
-      score += 5;
-    }
-  }
-
-  // Apply priority multiplier
-  if (score > 0) {
-    score += faq.priority;
-  }
-
-  return score;
-}
-
-// Simple text search scoring for regular pages
-function scoreMatch(page: Page, query: string): number {
-  const lowerQuery = query.toLowerCase();
-  const words = lowerQuery.split(/\s+/).filter(w => w.length > 2);
-
-  let score = 0;
-
-  // Title match (highest weight)
-  const lowerTitle = page.title.toLowerCase();
-  if (lowerTitle.includes(lowerQuery)) {
-    score += 100;
-  }
-  for (const word of words) {
-    if (lowerTitle.includes(word)) {
-      score += 20;
-    }
-  }
-
-  // Content match
-  const lowerContent = page.content.toLowerCase();
-  for (const word of words) {
-    const matches = (lowerContent.match(new RegExp(word, 'gi')) || []).length;
-    score += Math.min(matches, 10) * 2; // Cap at 10 matches per word
-  }
-
-  // Exact phrase match in content
-  if (lowerContent.includes(lowerQuery)) {
-    score += 30;
-  }
-
-  return score;
 }
 
 export async function GET(request: NextRequest) {

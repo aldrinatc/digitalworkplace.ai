@@ -1,3 +1,4 @@
+import { scoreFAQMatch, scoreMatch } from '../apps/chat-core-iq/src/lib/knowledge-ranking.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resilientAIFetch, currentModel, aiHealth, gatewayToken } from '../packages/ai-runtime/provider.ts';
@@ -94,4 +95,14 @@ test('runtime OIDC uses fresh request identity without a production env token', 
   assert.equal(gatewayToken(), 'request-1');
   token = 'request-2';
   assert.equal(gatewayToken(), 'request-2');
+});
+
+test('city hours query cannot be hijacked by generic FAQ keywords or punctuation', () => {
+  const query = 'What are City Hall hours?';
+  const unrelated = { title: 'Property Report', keywords: ['what is my property', 'city services'], priority: 100 };
+  const related = { title: 'City Hall hours', keywords: ['city hall'], priority: 10 };
+  assert.equal(scoreFAQMatch(unrelated, query), 0);
+  assert.ok(scoreFAQMatch(related, query) > 50);
+  assert.equal(scoreMatch({ title: 'Unrelated', content: 'The city has great services' }, query), 0);
+  assert.equal(scoreMatch({ title: 'Unrelated', content: 'some text' }, '([*'), 0);
 });
