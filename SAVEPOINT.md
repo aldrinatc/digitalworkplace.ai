@@ -1,6 +1,6 @@
 # Digital Workplace AI - Session Savepoint
 
-**Current savepoint — 2026-09-16:** Paused at Aldrin's request. Resume from [the recovery savepoint](docs/incidents/2026-09-16-resume-savepoint.md), which supersedes the historical session below. Main and five sub-apps remain on their existing independent deployments. Test Pilot's queue/schedule/history repair is now deployed; the main-app server repair is not deployed.
+**Current savepoint — 2026-09-16, 17:29 Asia/Dubai:** Foreground work paused at Aldrin's request for a comprehensive savepoint. Resume from [the recovery savepoint](docs/incidents/2026-09-16-resume-savepoint.md), which supersedes the historical session below. Main and five sub-apps were verified live at approximately 17:21. Test Pilot's queue/schedule/history repair is deployed; the main-app server repair is not. An hourly Codex monitoring/repair heartbeat is ACTIVE. The existing cloud workflow is enabled, but automatic scheduled execution is not yet verified; its proposed 15-minute/six-site expansion was not applied. See the linked savepoint for exact evidence, known defects, approvals and next steps.
 
 **Historical Last Updated**: 2026-07-03
 **Version**: 0.9.33
