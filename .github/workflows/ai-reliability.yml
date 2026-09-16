@@ -4,7 +4,8 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron: '2,17,32,47 * * * *'
+    # Same :02/:17/:32/:47 cadence; refreshed once for MON-20260916-01.
+    - cron: '2/15 * * * *'
 permissions:
   contents: read
 jobs:
