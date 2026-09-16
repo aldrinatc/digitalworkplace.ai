@@ -1,5 +1,7 @@
 # Live suite handoff — 16 September 2026
 
+> Superseded by the [latest recovery savepoint](2026-09-16-resume-savepoint.md): work briefly resumed, Test Pilot's prepared repair was validated and deployed, then paused again. Main's server repair remains pending.
+
 ## Current instruction
 
 Keep `digitalworkplace.ai` as the main launcher and the five sub-apps on their existing independent Vercel projects. Defer further diagnosis, feature work and releases. No new app deployment was made during this final availability check. Unfinished main/Test Pilot changes are saved on a separate local branch and must not be promoted as a verified release.

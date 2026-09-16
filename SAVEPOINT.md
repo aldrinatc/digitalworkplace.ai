@@ -1,6 +1,8 @@
 # Digital Workplace AI - Session Savepoint
 
-**Last Updated**: 2026-07-03
+**Current savepoint — 2026-09-16:** Paused at Aldrin's request. Resume from [the recovery savepoint](docs/incidents/2026-09-16-resume-savepoint.md), which supersedes the historical session below. Main and five sub-apps remain on their existing independent deployments. Test Pilot's queue/schedule/history repair is now deployed; the main-app server repair is not deployed.
+
+**Historical Last Updated**: 2026-07-03
 **Version**: 0.9.33
 **Session Summary**: 5th product card shipped — "GRC IQ / AI Compliance" linking to the external Auctor GRC app (auctorgrc.vercel.app). New teal/cyan animated shield illustration, grid now lg:3/xl:5 columns, Auctor demo-guide PDF bundled. Deployed + live-verified on www.digitalworkplace.ai (card renders, Launch App opens Auctor dashboard, Guide PDF serves 200).
 **Machine**: Mac Mini (aldrin-mac-mini)

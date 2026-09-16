@@ -4,6 +4,12 @@ All notable changes to Digital Workplace AI are documented in this file.
 
 ---
 
+## Recovery maintenance — 2026-09-16
+
+- Deployed Test Pilot's simulation queue/schedule controls, saved browser reports and persona, and accurate demo labels. Local workflow checks, production build and production route/readiness checks passed.
+- Main user/admin/analytics server repair is committed but not deployed pending its server credential. Its accompanying users-table permission migration has already been applied; new-user provisioning remains limited until activation.
+- See [the recovery savepoint](docs/incidents/2026-09-16-resume-savepoint.md) for verified scope, remaining dependencies and Intranet findings. Full-suite completion is not claimed.
+
 ## [0.9.33] - 2026-07-03
 
 ### GRC IQ — 5th product card (Auctor GRC)
