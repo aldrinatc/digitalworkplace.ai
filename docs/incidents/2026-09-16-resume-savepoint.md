@@ -1,14 +1,16 @@
 # Recovery savepoint — 16 September 2026
 
-Updated: **14:08 UTC / 18:08 Asia/Dubai**. This continuation record includes activated cloud monitoring, the 15-minute response heartbeat, and the scaling-configuration review.
+Updated: **14:12 UTC / 18:12 Asia/Dubai**. Foreground work is closed at the user's request; this record preserves activated cloud monitoring, the response heartbeat, scaling review and unresolved dependencies.
 
 ## Current state
 
-The latest instruction is **"make sure its scalable and on call , website and sub websites all work"**. This resumes operational work after the requested closure. The tested monitoring expansion is now published on work-fork `main`; the existing incident-response heartbeat is ACTIVE every 15 minutes. All six sites and the AI/database dependencies passed a full cloud run. No new application deployment, credential change, database mutation, paid upgrade or customer message occurred during this monitoring activation. The previous project tabs remain closed.
+The latest instruction is **"savepoint and close"**. Foreground work is paused and the working session is closed. Project browser tabs remain closed, and no development server was started. Production deployments and the previously authorized 15-minute cloud monitoring/incident-response heartbeat remain active. Do not resume unrelated feature work merely because this savepoint was saved.
+
+The monitoring expansion is published on work-fork `main`. The preceding verification passed all six sites and the AI/database dependencies in the cloud. No new application deployment, credential change, database mutation, paid upgrade or customer message occurred during that monitoring activation or this closure. No fresh production checks were needed for this documentation-only closure; the exact preceding evidence is recorded below.
 
 The overall objective remains a functional main launcher and five independently deployed sub-apps. Known feature/auth dependencies remain open. Do not claim 100% functionality, unlimited capacity, a staffed on-call service or guaranteed uptime.
 
-Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous savepoint commit `44bdfaa`; this document is committed in its successor. Monitor work is published on `codex/site-uptime-monitor` and work-fork `main` at `d8a0795`, and merged into the saved repair branch without deploying pending application code. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
+Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous operations/savepoint commit `f542096`; this closure record is committed in its successor. GitHub CI for `f542096` passed in run `35106656829`. Monitor work is published on `codex/site-uptime-monitor` and work-fork `main` at `d8a0795`, and merged into the saved repair branch without deploying pending application code. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
 
 ## Live inventory and latest evidence
 
