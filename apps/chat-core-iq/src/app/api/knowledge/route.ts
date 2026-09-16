@@ -1,3 +1,4 @@
+import {searchDocumentEntries} from '@/lib/server/document-store';
 import { scoreFAQMatch, scoreMatch } from '@/lib/knowledge-ranking';
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync, existsSync } from 'fs';
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.score - a.score);
 
   // Filter pages by section if provided
-  let pages = kb.pages;
+  let pages = [...kb.pages, ...await searchDocumentEntries(query)];
   if (section) {
     pages = pages.filter(p => p.section.toLowerCase() === section.toLowerCase());
   }
@@ -176,16 +177,17 @@ export async function POST(request: NextRequest) {
   }
 
   // Filter pages based on domain (multi-URL support for doralpd.com)
-  let filteredPages = kb.pages;
+  const searchablePages = [...kb.pages, ...await searchDocumentEntries(query)];
+  let filteredPages = searchablePages;
   if (domain && domain.includes('doralpd')) {
-    filteredPages = kb.pages.filter(p =>
+    filteredPages = searchablePages.filter(p =>
       p.url.toLowerCase().includes('police') ||
       p.section.toLowerCase().includes('police') ||
       p.title.toLowerCase().includes('police') ||
       p.content.toLowerCase().includes('police department')
     );
     if (filteredPages.length === 0) {
-      filteredPages = kb.pages;
+      filteredPages = searchablePages;
     }
   }
 

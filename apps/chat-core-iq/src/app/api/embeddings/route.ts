@@ -263,7 +263,7 @@ export async function GET(request: NextRequest) {
           bySource,
         },
       },
-      embeddingModel: 'all-MiniLM-L6-v2',
+      embeddingModel: 'text-embedding-3-small',
       dimensions: getEmbeddingDimensions(),
       provider: 'local (transformers.js)',
       actions: {

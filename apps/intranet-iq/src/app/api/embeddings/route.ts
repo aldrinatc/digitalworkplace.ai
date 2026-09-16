@@ -206,7 +206,7 @@ export async function GET() {
 
     return NextResponse.json({
       stats: data,
-      embeddingModel: 'all-MiniLM-L6-v2',
+      embeddingModel: 'text-embedding-3-small',
       dimensions: getEmbeddingDimensions(),
       provider: 'local (transformers.js)',
     });

@@ -23,6 +23,7 @@ import {
   addMessageToSession,
   getSessionHistory,
 } from '../apps/chat-core-iq/src/lib/channels/session-manager';
+import {storeDocument,listDocuments,archiveDocument,searchDocumentEntries} from '../apps/chat-core-iq/src/lib/server/document-store';
 import { database } from '../apps/chat-core-iq/src/lib/server/database';
 const url = process.env.DATABASE_URL;
 if (
@@ -58,6 +59,9 @@ test.before(async () => {
       'utf8',
     ),
   );
+  for(const file of ['019_support_draft_storage.sql','020_dcq_document_storage.sql']) {
+    await sql.unsafe(await readFile(new URL(`../supabase/migrations/${file}`,import.meta.url),'utf8'));
+  }
   const day = new Date();
   day.setUTCDate(day.getUTCDate() + 3);
   date = day.toISOString().slice(0, 10);
@@ -238,4 +242,32 @@ test('the runtime database role cannot read account emails or grant itself privi
   assert.equal(row.emails, false);
   assert.equal(row.change_users, false);
   assert.equal(row.sessions, true);
+});
+
+test('document originals and searchable chunks persist, replacement and removal archive old versions',async()=>{
+ const file={name:'synthetic.txt',type:'text/plain',content:Buffer.from('Synthetic workplace zebraconfirmation policy')};
+ const entries=[{title:'Synthetic zebraconfirmation',content:file.content.toString(),section:'Documents',url:''}];
+ const first=await storeDocument(file,entries);
+ assert.ok((await listDocuments()).some(d=>d.id===first));
+ assert.equal((await searchDocumentEntries('zebraconfirmation')).length,1);
+ const second=await storeDocument(file,entries);
+ assert.notEqual(first,second);
+ assert.equal((await listDocuments()).filter(d=>d.filename===file.name).length,1);
+ assert.equal((await searchDocumentEntries('zebraconfirmation')).length,1);
+ await archiveDocument(second);
+ assert.equal((await searchDocumentEntries('zebraconfirmation')).length,0);
+ const [saved]=await sql`select count(*)::int as total from dcq.document_files where document_id in (${first},${second})`;
+ assert.equal(saved.total,2);
+});
+test('support draft tables deny browser roles and allow only the scoped service role',async()=>{
+ const [access]=await sql`select has_table_privilege('anon','public.dsq_drafts','SELECT') as anon,has_table_privilege('authenticated','public.dsq_drafts','SELECT') as authenticated`;
+ assert.equal(access.anon,false);assert.equal(access.authenticated,false);
+ await sql.begin(async tx=>{
+  await tx`set local role dsq_runtime`;
+  await tx`insert into public.dsq_drafts (id,"draftId","ticketId","ticketSubject","originalContent","draftContent","kbArticlesUsed","updatedAt") values ('synthetic-draft','synthetic-display','synthetic-ticket','Synthetic subject','Synthetic message','Synthetic reply',ARRAY[]::text[],now())`;
+  await tx`insert into public.dsq_draft_versions (id,"draftId",content) values ('synthetic-version','synthetic-draft','Synthetic reply')`;
+  const [r]=await tx`select d.status,v.version from public.dsq_drafts d join public.dsq_draft_versions v on v."draftId"=d.id where d.id='synthetic-draft'`;
+  assert.equal(r.status,'PENDING_REVIEW');assert.equal(r.version,1);
+  await tx`update public.dsq_drafts set status='APPROVED' where id='synthetic-draft'`;
+ });
 });

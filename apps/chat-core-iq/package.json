@@ -46,7 +46,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "twilio": "^5.11.1",
-    "zod": "^4.3.4"
+    "zod": "^4.3.4",
+    "@clerk/nextjs": "6.36.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

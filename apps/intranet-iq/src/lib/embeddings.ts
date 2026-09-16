@@ -1,3 +1,4 @@
+import { embeddingFetch, gatewayToken } from './ai-provider';
 /**
  * OpenAI Embeddings using text-embedding-3-small
  * Produces 1536-dimensional embeddings
@@ -32,7 +33,7 @@ interface OpenAIEmbeddingResponse {
  * @returns 1536-dimensional embedding vector
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.AI_EMBEDDING_ROUTE === 'vercel-openai' ? gatewayToken() : process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
@@ -45,7 +46,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error('Cannot generate embedding for empty text');
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
+  const response = await embeddingFetch('https://api.openai.com/v1/embeddings', {
     signal: AbortSignal.timeout(5_000),
     method: 'POST',
     headers: {
@@ -59,8 +60,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorBody}`);
+    throw new Error(`Embedding service unavailable (${response.status})`);
   }
 
   const data: OpenAIEmbeddingResponse = await response.json();
@@ -79,7 +79,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * @returns Array of 1536-dimensional embedding vectors
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.AI_EMBEDDING_ROUTE === 'vercel-openai' ? gatewayToken() : process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
@@ -98,7 +98,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     throw new Error('No valid texts to embed after filtering');
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
+  const response = await embeddingFetch('https://api.openai.com/v1/embeddings', {
     signal: AbortSignal.timeout(5_000),
     method: 'POST',
     headers: {
@@ -112,8 +112,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorBody}`);
+    throw new Error(`Embedding service unavailable (${response.status})`);
   }
 
   const data: OpenAIEmbeddingResponse = await response.json();

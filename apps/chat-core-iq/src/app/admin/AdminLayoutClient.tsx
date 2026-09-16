@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "sonner";
@@ -101,11 +102,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [activeAnnouncements, setActiveAnnouncements] = useState(0);
   const { language, t } = useLanguage();
   const { userEmail, userName, isSessionActive } = useSession();
+  const {user: workplaceUser} = useUser();
 
   // Compute user profile from session or fallback to admin defaults
   const userProfile = {
-    name: isSessionActive && userName ? userName : 'Aldrin',
-    email: isSessionActive && userEmail ? userEmail : 'aldrin@atc.xyz',
+    name: workplaceUser?.fullName || (isSessionActive && userName ? userName : 'Administrator'),
+    email: workplaceUser?.primaryEmailAddress?.emailAddress || (isSessionActive && userEmail ? userEmail : ''),
     initials: isSessionActive && userName
       ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
       : 'A',

@@ -844,16 +844,16 @@ export default function ContentManagement() {
   }, [activeTab, fetchDocuments]);
 
   const handleFileUpload = async (files: File[]) => {
-    const validTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword", "text/plain"];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+    const maxSize = 4 * 1024 * 1024; // 4MB
 
     for (const file of files) {
-      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|doc|txt)$/i)) {
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt)$/i)) {
         toast.error(`Invalid file type: ${file.name}. Only PDF, DOCX, and TXT are allowed.`);
         continue;
       }
       if (file.size > maxSize) {
-        toast.error(`File too large: ${file.name}. Maximum size is 10MB.`);
+        toast.error(`File too large: ${file.name}. Maximum size is 4MB.`);
         continue;
       }
 
@@ -880,7 +880,7 @@ export default function ContentManagement() {
             }
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("POST", "/api/documents");
+          xhr.open("POST", apiUrl("/api/documents"));
           xhr.send(formData);
         });
 
@@ -2345,7 +2345,7 @@ export default function ContentManagement() {
                     {isDragging ? "Drop files here" : "Drag and drop files here"}
                   </p>
                   <p className="text-sm text-[#666666] mb-3">or click to browse</p>
-                  <p className="text-xs text-[#6b6b6b]">PDF, DOCX, TXT (max 10MB each)</p>
+                  <p className="text-xs text-[#6b6b6b]">PDF, DOCX, TXT (max 4MB each)</p>
                 </div>
                 {uploading && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-xl">

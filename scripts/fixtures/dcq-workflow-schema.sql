@@ -26,3 +26,8 @@ CREATE TABLE dcq.service_requests (
 CREATE TABLE IF NOT EXISTS public.users(id uuid PRIMARY KEY,clerk_id text,role text,email text);
 CREATE TABLE IF NOT EXISTS public.projects(id uuid PRIMARY KEY,code text);
 CREATE TABLE IF NOT EXISTS public.user_project_access(user_id uuid,project_id uuid,role text);
+
+CREATE TABLE dcq.documents(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),filename text NOT NULL,original_name text NOT NULL,mime_type text,file_size integer,chunks integer DEFAULT 0,processing_status text,extracted_text text,metadata jsonb DEFAULT '{}',uploaded_at timestamptz DEFAULT now(),processed_at timestamptz);
+CREATE TABLE dcq.knowledge_entries(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),title text,content text,section text,url text,source_type text,language text,is_active boolean,metadata jsonb DEFAULT '{}',updated_at timestamptz DEFAULT now());
+DROP TABLE IF EXISTS public.dsq_draft_versions,public.dsq_drafts,public.dsq_draft_analytics CASCADE;
+DROP TYPE IF EXISTS public."DSQDraftStatus",public."DSQDraftPriority",public."DSQDraftEditType" CASCADE;

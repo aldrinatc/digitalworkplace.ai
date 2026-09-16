@@ -6,7 +6,7 @@ import { resilientAIFetch, currentModel, aiHealth, gatewayToken } from '../packa
 import { searchTerms, keywordRelevance, isPersistedThread } from '../apps/intranet-iq/src/lib/retrieval-quality.ts';
 
 const originalFetch = globalThis.fetch;
-const envNames = ['AI_GATEWAY_API_KEY', 'VERCEL_OIDC_TOKEN', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'];
+const envNames = ['AI_GATEWAY_API_KEY', 'VERCEL_OIDC_TOKEN', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'AI_EMBEDDING_ROUTE'];
 const saved = Object.fromEntries(envNames.map(key => [key, process.env[key]]));
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -115,4 +115,19 @@ test('verified government-center hours rank first and retain their official cita
   assert.match(top.faq.verifiedAnswer.en, /City Clerk/);
   assert.match(top.faq.verifiedAnswer.en, /8 AM–5 PM/);
   assert.ok(top.faq.verifiedAnswer.en.includes(top.faq.url));
+});
+
+
+test('embedding gateway is opt-in, OpenAI-only, and keeps the existing 1536 dimensions', async () => {
+  configure(); process.env.AI_EMBEDDING_ROUTE = 'vercel-openai';
+  globalThis.fetch = async request => {
+    assert.equal(request.url, 'https://ai-gateway.vercel.sh/v1/embeddings');
+    assert.equal(request.headers.get('authorization'), 'Bearer test-oidc');
+    const body = await request.json();
+    assert.equal(body.model, 'openai/text-embedding-3-small');
+    assert.equal(body.dimensions, 1536);
+    assert.deepEqual(body.providerOptions.gateway.only, ['openai']);
+    return Response.json({ data: [] });
+  };
+  await resilientAIFetch('https://api.openai.com/v1/embeddings', { method: 'POST', body: JSON.stringify({ model: 'text-embedding-3-small', input: 'Synthetic' }) });
 });
