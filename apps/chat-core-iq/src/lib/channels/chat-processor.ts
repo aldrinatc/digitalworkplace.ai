@@ -1,3 +1,4 @@
+import { anthropicOptions, openaiOptions } from '@/lib/ai-provider';
 // Shared chat processor for all channels (Web, IVR, SMS, Social)
 // Reuses the same RAG + LLM pipeline with LLM fallback support
 
@@ -14,17 +15,17 @@ let anthropic: Anthropic | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!(process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    openai = new OpenAI(openaiOptions());
   }
   return openai;
 }
 
 function getAnthropic(): Anthropic | null {
-  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
-    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  if (!anthropic && (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    anthropic = new Anthropic(anthropicOptions());
   }
   return anthropic;
 }

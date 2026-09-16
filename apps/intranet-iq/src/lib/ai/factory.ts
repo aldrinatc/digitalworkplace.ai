@@ -1,3 +1,4 @@
+import { aiKey } from '@/lib/ai-provider';
 /**
  * LLM Provider Factory
  * Creates and manages LLM provider instances
@@ -23,14 +24,14 @@ import {
  */
 export function initializeLLMProviders(): void {
   // Register Anthropic provider
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicKey = aiKey('anthropic');
   if (anthropicKey) {
     const anthropicProvider = new AnthropicProvider(anthropicKey);
     llmRegistry.register(anthropicProvider);
   }
 
   // Register OpenAI provider
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openaiKey = aiKey('openai');
   if (openaiKey) {
     const openaiProvider = new OpenAIProvider(openaiKey);
     llmRegistry.register(openaiProvider);

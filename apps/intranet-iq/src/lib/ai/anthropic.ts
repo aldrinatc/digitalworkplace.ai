@@ -1,3 +1,4 @@
+import { anthropicOptions } from '@/lib/ai-provider';
 /**
  * Anthropic Claude Provider Implementation
  * Implements BaseLLMProvider for Claude models
@@ -59,13 +60,13 @@ export class AnthropicProvider extends BaseLLMProvider {
   private client: unknown;
 
   constructor(apiKey?: string, defaultModel: LLMModel = 'claude-sonnet-4-20250514') {
-    super(apiKey || process.env.ANTHROPIC_API_KEY || '', defaultModel);
+    super(apiKey || (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) || '', defaultModel);
   }
 
   private async getClient() {
     if (!this.client) {
       const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      this.client = new Anthropic({ apiKey: this.apiKey });
+      this.client = new Anthropic({ ...anthropicOptions(), apiKey: this.apiKey });
     }
     return this.client as import('@anthropic-ai/sdk').default;
   }
@@ -136,7 +137,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         outputTokens: response.usage.output_tokens,
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,
       },
-      model: options.model || this.defaultModel,
+      model: response.model as LLMModel,
       stopReason: response.stop_reason,
     };
   }

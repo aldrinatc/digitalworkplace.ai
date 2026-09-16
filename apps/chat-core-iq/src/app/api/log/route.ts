@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { readConversationData, writeConversation, type ConversationEntry } from '@/lib/conversation-store';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://dcq.digitalworkplace.ai',
@@ -10,47 +9,6 @@ const corsHeaders = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-}
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
-interface ConversationEntry {
-  id: string;
-  sessionId: string;
-  startTime: string;
-  endTime: string | null;
-  messages: Message[];
-  language: string;
-  sentiment: string;
-  escalated: boolean;
-  feedbackGiven: boolean;
-  userAgent: string;
-  referrer: string;
-}
-
-interface ConversationData {
-  conversations: ConversationEntry[];
-  lastUpdated: string | null;
-}
-
-const DATA_FILE = path.join(process.cwd(), 'data', 'conversations.json');
-
-async function readConversationData(): Promise<ConversationData> {
-  try {
-    const content = await fs.readFile(DATA_FILE, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return { conversations: [], lastUpdated: null };
-  }
-}
-
-async function writeConversationData(data: ConversationData): Promise<void> {
-  data.lastUpdated = new Date().toISOString();
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 export async function GET(request: NextRequest) {
@@ -128,7 +86,7 @@ export async function POST(request: NextRequest) {
       sessionId,
       startTime: messages[0]?.timestamp || new Date().toISOString(),
       endTime: messages[messages.length - 1]?.timestamp || new Date().toISOString(),
-      messages: messages.map((m: Message) => ({
+      messages: messages.map((m: ConversationEntry['messages'][number]) => ({
         role: m.role,
         content: m.content,
         timestamp: m.timestamp || new Date().toISOString(),
@@ -141,13 +99,11 @@ export async function POST(request: NextRequest) {
       referrer: referrer || 'unknown',
     };
 
-    const data = await readConversationData();
-    data.conversations.push(conversationEntry);
-    await writeConversationData(data);
+    const conversationId = await writeConversation(conversationEntry);
 
     return NextResponse.json({
       success: true,
-      conversationId: conversationEntry.id,
+      conversationId,
     }, { headers: corsHeaders });
   } catch (error) {
     console.error('Failed to save conversation:', error);

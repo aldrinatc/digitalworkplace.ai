@@ -46,6 +46,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   const response = await fetch('https://api.openai.com/v1/embeddings', {
+    signal: AbortSignal.timeout(5_000),
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -98,6 +99,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   }
 
   const response = await fetch('https://api.openai.com/v1/embeddings', {
+    signal: AbortSignal.timeout(5_000),
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,

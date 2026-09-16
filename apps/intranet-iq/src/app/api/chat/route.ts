@@ -1,3 +1,6 @@
+import { getRAGContextKeyword } from '@/lib/keyword-retrieval';
+import { anthropicOptions } from '@/lib/ai-provider';
+import { isPersistedThread } from '@/lib/retrieval-quality';
 /**
  * Chat API Route with Claude AI Integration
  * Handles AI chat with RAG (Retrieval Augmented Generation) from knowledge base
@@ -148,7 +151,7 @@ async function buildConversationContext(
   currentMessage: string,
   limit: number = 20
 ): Promise<ConversationMessage[]> {
-  if (!threadId) {
+  if (!isPersistedThread(threadId)) {
     return [{ role: 'user', content: currentMessage }];
   }
 
@@ -279,60 +282,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 // Fallback: Fetch relevant context using keyword search
-async function getRAGContextKeyword(query: string, limit: number = 5): Promise<Source[]> {
-  try {
-    const searchTerms = query.toLowerCase().split(' ').filter(t => t.length > 2);
-    const sources: Source[] = [];
-
-    // Search articles in diq schema using ilike for partial matching
-    const { data: articles, error: artError } = await supabase
-      .schema('diq')
-      .from('articles')
-      .select('id, title, content, slug')
-      .or(searchTerms.map(term => `title.ilike.%${term}%,content.ilike.%${term}%`).join(','))
-      .eq('status', 'published')
-      .limit(limit);
-
-    if (!artError && articles) {
-      articles.forEach((article, idx) => {
-        sources.push({
-          id: article.id,
-          type: 'article',
-          title: article.title || 'Untitled Article',
-          url: `/diq/content/${article.slug || article.id}`,
-          relevance: 0.95 - (idx * 0.05),
-          content: article.content?.slice(0, 500) || '',
-        });
-      });
-    }
-
-    // Also search knowledge items in public schema
-    const { data: knowledgeItems, error: kiError } = await supabase
-      .from('knowledge_items')
-      .select('id, title, content, type, source_url')
-      .or(searchTerms.map(term => `title.ilike.%${term}%,content.ilike.%${term}%`).join(','))
-      .limit(limit);
-
-    if (!kiError && knowledgeItems) {
-      knowledgeItems.forEach((item, idx) => {
-        sources.push({
-          id: item.id,
-          type: item.type || 'document',
-          title: item.title || 'Untitled Document',
-          url: item.source_url || '/diq/content',
-          relevance: 0.90 - (idx * 0.05),
-          content: item.content?.slice(0, 500) || '',
-        });
-      });
-    }
-
-    // Sort by relevance and return top sources
-    return sources.sort((a, b) => b.relevance - a.relevance).slice(0, limit);
-  } catch (error) {
-    console.error('Error fetching RAG context:', error);
-    return [];
-  }
-}
 
 // Hybrid RAG: combines semantic and keyword search
 async function getRAGContext(query: string, limit: number = 5): Promise<Source[]> {
@@ -677,12 +626,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Check if Anthropic API key is configured
-    if (process.env.ANTHROPIC_API_KEY) {
+    if ((process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
       try {
         const Anthropic = (await import('@anthropic-ai/sdk')).default;
-        const anthropic = new Anthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        });
+        const anthropic = new Anthropic(anthropicOptions());
 
         // Build system prompt with RAG context, response style, and app context
         const systemPrompt = buildSystemPrompt(responseStyle, sources, true, appContext);
@@ -797,7 +744,7 @@ export async function POST(request: NextRequest) {
         const confidence = confidenceMap[confidenceLevel];
 
         // Save assistant message to thread if threadId provided
-        if (threadId) {
+        if (isPersistedThread(threadId)) {
           await supabase
             .schema('diq')
             .from('chat_messages')
@@ -814,7 +761,7 @@ export async function POST(request: NextRequest) {
               })),
               confidence,
               tokens_used: response.usage?.output_tokens || 0,
-              llm_model: model,
+              llm_model: response.model,
               metadata: { toolResults },
             });
         }
@@ -829,7 +776,7 @@ export async function POST(request: NextRequest) {
             relevance: s.relevance,
           })),
           confidence,
-          model,
+          model: response.model,
           tokensUsed: response.usage?.output_tokens || 0,
           toolsUsed: toolResults,
           metrics: {
@@ -852,63 +799,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Demo mode: Return contextual response based on message
-    const demoResponse = getDemoResponse(message);
-    const responseTime = Date.now() - startTime;
-
-    // Add context-aware response if we found relevant articles
-    let finalResponse = demoResponse;
-    if (sources.length > 0) {
-      finalResponse = `Based on our knowledge base, here's what I found:\n\n${demoResponse}\n\n📚 Related articles: ${sources.map(s => s.title).join(', ')}`;
-    }
-
-    steps.push({
-      id: '3',
-      name: 'Demo mode response',
-      status: 'completed',
-      duration: Date.now() - startTime - steps.reduce((sum, s) => sum + s.duration, 0),
-    });
-
-    // Calculate confidence for demo mode
-    const demoAvgRelevance = sources.length > 0
-      ? sources.reduce((sum, s) => sum + s.relevance, 0) / sources.length
-      : 0;
-
-    let demoConfidenceLevel: 'high' | 'medium' | 'low';
-    if (sources.length >= 3 && demoAvgRelevance > 0.7) {
-      demoConfidenceLevel = 'high';
-    } else if (sources.length >= 1 && demoAvgRelevance > 0.5) {
-      demoConfidenceLevel = 'medium';
-    } else {
-      demoConfidenceLevel = 'low';
-    }
-
-    const demoConfidenceMap = { high: 95, medium: 75, low: 50 };
-    const demoConfidence = demoConfidenceMap[demoConfidenceLevel];
-
+    // An unavailable provider is an outage, never a high-confidence demo answer.
     return NextResponse.json({
-      message: finalResponse,
-      sources: sources.map(s => ({
-        id: s.id,
-        type: s.type,
-        title: s.title,
-        url: s.url,
-        relevance: s.relevance,
-      })),
-      confidence: demoConfidence,
-      confidenceLevel: demoConfidenceLevel,
-      model: 'demo-mode',
-      tokensUsed: 0,
-      demo: true,
-      metrics: {
-        responseTime,
-        totalTokens: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        conversationTurns: conversationHistory.length,
-      },
-      steps,
-    });
+      error: 'The AI service is temporarily unavailable. You can still search and browse the knowledge base. Please try again later.',
+      code: 'AI_UNAVAILABLE', sources: [], confidence: 0,
+    }, { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } });
+
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { readConversationData } from '@/lib/conversation-store';
+import { readFeedbackData } from '@/lib/feedback-store';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://dcq.digitalworkplace.ai',
@@ -10,67 +10,6 @@ const corsHeaders = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-}
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
-interface ConversationEntry {
-  id: string;
-  sessionId: string;
-  startTime: string;
-  endTime: string | null;
-  messages: Message[];
-  language: string;
-  sentiment: string;
-  escalated: boolean;
-  feedbackGiven: boolean;
-  channel?: 'web' | 'ivr' | 'sms' | 'facebook' | 'instagram' | 'whatsapp';
-}
-
-interface FeedbackEntry {
-  id: string;
-  messageId: string;
-  conversationId: string;
-  rating: 'positive' | 'negative';
-  query: string;
-  response: string;
-  timestamp: string;
-  language: string;
-}
-
-interface ConversationData {
-  conversations: ConversationEntry[];
-  lastUpdated: string | null;
-}
-
-interface FeedbackData {
-  feedback: FeedbackEntry[];
-  lastUpdated: string | null;
-}
-
-const CONVERSATIONS_FILE = path.join(process.cwd(), 'data', 'conversations.json');
-const FEEDBACK_FILE = path.join(process.cwd(), 'data', 'feedback.json');
-
-async function readConversationData(): Promise<ConversationData> {
-  try {
-    const content = await fs.readFile(CONVERSATIONS_FILE, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return { conversations: [], lastUpdated: null };
-  }
-}
-
-async function readFeedbackData(): Promise<FeedbackData> {
-  try {
-    const content = await fs.readFile(FEEDBACK_FILE, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return { feedback: [], lastUpdated: null };
-  }
 }
 
 function calculateDuration(startTime: string, endTime: string | null): number {

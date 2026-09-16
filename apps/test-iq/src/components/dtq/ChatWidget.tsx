@@ -143,7 +143,7 @@ async function fetchChatResponse(
   persona: string,
   history: { role: string; content: string }[]
 ): Promise<{ response: string; sources: { title: string; type: string; similarity: number }[]; relatedLinks?: ChatLink[] }> {
-  const res = await fetch('/api/dtq/chat', {
+  const res = await fetch('/dtq/api/dtq/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, persona, history }),
@@ -223,7 +223,7 @@ export default function ChatWidget() {
       addMessage(assistantMessage);
       if (!isOpen) incrementUnread();
     } catch {
-      const response = aiResponses[actionId] || "I don't have information about that yet.";
+      const response = "The AI service is temporarily unavailable. You can still explore the dashboard and reports. Please try again later.";
       const assistantMessage: ChatMessage = {
         id: generateId('assistant'),
         role: 'assistant',
@@ -271,7 +271,7 @@ export default function ChatWidget() {
       const assistantMessage: ChatMessage = {
         id: generateId('assistant'),
         role: 'assistant',
-        content: `I understand you're asking about "${userInput}". Based on current metrics, here are my insights:\n\n- Overall test coverage is healthy at 93.3%\n- No critical issues detected in related areas\n- Recommend reviewing the feature coverage section for detailed data\n\nWould you like me to dive deeper into any specific aspect?`,
+        content: "The AI service is temporarily unavailable. You can still explore the dashboard and reports. Please try again later.",
         timestamp: new Date(),
         relatedLinks: getFallbackLinks(persona),
       };

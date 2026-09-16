@@ -1,3 +1,6 @@
+import { getRAGContextKeyword } from '@/lib/keyword-retrieval';
+import { isPersistedThread } from '@/lib/retrieval-quality';
+import { anthropicOptions } from '@/lib/ai-provider';
 /**
  * Streaming Chat API Route with Claude AI Integration
  * Uses Server-Sent Events (SSE) for real-time streaming responses
@@ -37,7 +40,7 @@ async function buildConversationContext(
   currentMessage: string,
   limit: number = 20
 ): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
-  if (!threadId) {
+  if (!isPersistedThread(threadId)) {
     return [{ role: 'user', content: currentMessage }];
   }
 
@@ -149,8 +152,8 @@ async function getRAGContext(query: string, limit: number = 5): Promise<Source[]
 
     return sources.sort((a, b) => b.relevance - a.relevance).slice(0, limit);
   } catch (error) {
-    console.error('RAG error:', error);
-    return [];
+    console.warn('Semantic retrieval unavailable; using keyword search');
+    return getRAGContextKeyword(query, limit);
   }
 }
 
@@ -239,37 +242,13 @@ export async function POST(request: NextRequest) {
           })));
 
           // Check for API key
-          if (!process.env.ANTHROPIC_API_KEY) {
-            // Demo mode - simulate streaming
-            const demoResponse = "I'm your AI assistant for the Digital Workplace. I can help you find information about company policies, benefits, IT support, and more. What would you like to know?";
-
-            for (const char of demoResponse) {
-              controller.enqueue(encoder.encode(formatSSE({
-                type: 'text',
-                data: { text: char }
-              })));
-              await new Promise(resolve => setTimeout(resolve, 20)); // Simulate typing
-            }
-
-            controller.enqueue(encoder.encode(formatSSE({
-              type: 'metrics',
-              data: {
-                responseTime: Date.now() - startTime,
-                totalTokens: 0,
-                demo: true,
-              }
-            })));
-
-            controller.enqueue(encoder.encode(formatSSE({ type: 'done', data: {} })));
-            controller.close();
-            return;
+          if (!(process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+            throw new Error('AI service temporarily unavailable');
           }
 
           // Real streaming with Claude
           const Anthropic = (await import('@anthropic-ai/sdk')).default;
-          const anthropic = new Anthropic({
-            apiKey: process.env.ANTHROPIC_API_KEY,
-          });
+          const anthropic = new Anthropic(anthropicOptions());
 
           const systemPrompt = buildSystemPrompt(responseStyle, sources);
 

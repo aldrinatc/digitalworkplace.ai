@@ -1,3 +1,4 @@
+import { openaiOptions } from '@/lib/ai-provider';
 /**
  * OpenAI Provider Implementation
  * Implements BaseLLMProvider for GPT models
@@ -100,13 +101,13 @@ export class OpenAIProvider extends BaseLLMProvider {
   private client: unknown;
 
   constructor(apiKey?: string, defaultModel: LLMModel = 'gpt-4o') {
-    super(apiKey || process.env.OPENAI_API_KEY || '', defaultModel);
+    super(apiKey || (process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) || '', defaultModel);
   }
 
   private async getClient() {
     if (!this.client) {
       const OpenAI = (await import('openai')).default;
-      this.client = new OpenAI({ apiKey: this.apiKey });
+      this.client = new OpenAI({ ...openaiOptions(), apiKey: this.apiKey });
     }
     return this.client as import('openai').default;
   }

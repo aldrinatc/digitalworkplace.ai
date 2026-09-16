@@ -396,10 +396,10 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error("Chat API error:", error);
-      // Fallback to demo response on error
+      // Show the failure without inventing an answer or source confidence.
       await addMessage(
         "assistant",
-        "I apologize, but I encountered an error processing your request. Please try again.",
+        error instanceof Error ? error.message : "The AI service is temporarily unavailable. Please try again later.",
         {
           sources: [],
           confidence: 0,
@@ -490,7 +490,7 @@ export default function ChatPage() {
       console.error("Regenerate API error:", error);
       await addMessage(
         "assistant",
-        "I apologize, but I couldn't regenerate the response. Please try again.",
+        error instanceof Error ? error.message : "The AI service is temporarily unavailable. Please try again later.",
         {
           sources: [],
           confidence: 0,
@@ -1316,4 +1316,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

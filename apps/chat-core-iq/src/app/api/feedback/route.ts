@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { readFeedbackData, writeFeedback, type FeedbackEntry } from '@/lib/feedback-store';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://dcq.digitalworkplace.ai',
@@ -10,38 +9,6 @@ const corsHeaders = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-}
-
-interface FeedbackEntry {
-  id: string;
-  messageId: string;
-  conversationId: string;
-  rating: 'positive' | 'negative';
-  query: string;
-  response: string;
-  timestamp: string;
-  language: string;
-}
-
-interface FeedbackData {
-  feedback: FeedbackEntry[];
-  lastUpdated: string | null;
-}
-
-const DATA_FILE = path.join(process.cwd(), 'data', 'feedback.json');
-
-async function readFeedbackData(): Promise<FeedbackData> {
-  try {
-    const content = await fs.readFile(DATA_FILE, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return { feedback: [], lastUpdated: null };
-  }
-}
-
-async function writeFeedbackData(data: FeedbackData): Promise<void> {
-  data.lastUpdated = new Date().toISOString();
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 export async function GET() {
@@ -91,13 +58,11 @@ export async function POST(request: NextRequest) {
       language: language || 'en',
     };
 
-    const data = await readFeedbackData();
-    data.feedback.push(feedbackEntry);
-    await writeFeedbackData(data);
+    const feedbackId = await writeFeedback(feedbackEntry);
 
     return NextResponse.json({
       success: true,
-      feedbackId: feedbackEntry.id,
+      feedbackId,
       message: rating === 'positive'
         ? 'Thank you for your positive feedback!'
         : 'Thank you for your feedback. We will work to improve.',

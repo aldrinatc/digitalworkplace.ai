@@ -40,3 +40,4 @@ coverage/
 
 # Screenshots (dev only)
 screenshot*.png
+.env*

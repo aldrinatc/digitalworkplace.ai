@@ -1,11 +1,11 @@
+import { anthropicOptions, openaiOptions } from '@/lib/ai-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { detectLanguage, getSystemPrompt, Language } from '@/lib/i18n';
 import { analyzeSentiment } from '@/lib/sentiment';
 import { getSettings } from '@/lib/data-store';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { writeConversation } from '@/lib/conversation-store';
 
 // Workflow imports
 import {
@@ -60,7 +60,7 @@ function getCorsHeaders(request: NextRequest): Record<string, string> {
 
   // Check if origin is in allowed list
   const isAllowed = origin && ALLOWED_ORIGINS.some(allowed =>
-    origin === allowed || origin.startsWith(allowed)
+    origin === allowed
   );
 
   // In development or if origin is allowed, reflect the origin
@@ -93,19 +93,17 @@ let anthropic: Anthropic | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!(process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    openai = new OpenAI(openaiOptions());
   }
   return openai;
 }
 
 function getAnthropic(): Anthropic | null {
-  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
-    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  if (!anthropic && (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    anthropic = new Anthropic(anthropicOptions());
   }
   return anthropic;
 }
@@ -147,6 +145,7 @@ interface WorkflowState {
 }
 
 interface ChatResponse {
+  persistenceStatus?: 'saved' | 'unavailable';
   message: string;
   language: string;
   sentiment: string;
@@ -156,25 +155,6 @@ interface ChatResponse {
   conversationId: string;
   actions?: ActionButton[];
   workflowState?: WorkflowState;
-}
-
-const CONVERSATIONS_FILE = path.join(process.cwd(), 'data', 'conversations.json');
-
-async function logConversation(entry: ConversationLogEntry): Promise<void> {
-  try {
-    let data: { conversations: ConversationLogEntry[]; lastUpdated: string | null } = { conversations: [], lastUpdated: null };
-    try {
-      const content = await fs.readFile(CONVERSATIONS_FILE, 'utf-8');
-      data = JSON.parse(content);
-    } catch {
-      // File doesn't exist, use default
-    }
-    data.conversations.push(entry);
-    data.lastUpdated = new Date().toISOString();
-    await fs.writeFile(CONVERSATIONS_FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Failed to log conversation:', error);
-  }
 }
 
 // Fetch relevant context from knowledge base
@@ -607,7 +587,10 @@ export async function POST(request: NextRequest) {
             userAgent: request.headers.get('user-agent') || 'unknown',
             referrer: request.headers.get('referer') || 'unknown',
           };
-          logConversation(logEntry).catch(console.error);
+          try {
+            response.conversationId = await writeConversation(logEntry);
+            response.persistenceStatus = 'saved';
+          } catch { response.persistenceStatus = 'unavailable'; }
 
           return NextResponse.json(response, { headers: getCorsHeaders(request) });
         }
@@ -784,14 +767,15 @@ I hope that helps!"
       }
     }
 
-    // Default message if both LLMs failed
+    // A failed provider must not look like a successful, sourced answer.
     if (!assistantMessage) {
-      const fallbackMessages: Record<Language, string> = {
-        en: 'I apologize, I could not process your request. Please try again.',
-        es: 'Lo siento, no pude procesar su solicitud. Por favor intente de nuevo.',
-        ht: 'Eskize mwen, mwen pa t kapab trete demann ou an. Tanpri eseye ankò.'
+      const unavailable: Record<Language, string> = {
+        en: 'The AI service is temporarily unavailable. Please use the FAQs or try again later.',
+        es: 'El servicio de IA no está disponible temporalmente. Consulte las preguntas frecuentes o inténtelo más tarde.',
+        ht: 'Sèvis AI a pa disponib pou kounye a. Tanpri gade kesyon yo poze souvan oswa eseye pita.'
       };
-      assistantMessage = fallbackMessages[detectedLanguage] || fallbackMessages.en;
+      return NextResponse.json({ error: 'AI_UNAVAILABLE', message: unavailable[detectedLanguage], sources: [] },
+        { status: 503, headers: { ...getCorsHeaders(request), 'Retry-After': '60', 'Cache-Control': 'no-store' } });
     }
 
     // Prepare sources for response
@@ -832,8 +816,14 @@ I hope that helps!"
       referrer: request.headers.get('referer') || 'unknown',
     };
 
-    // Log asynchronously (don't block response)
-    logConversation(logEntry).catch(console.error);
+    // Await persistence: serverless runtimes may stop work after returning.
+    let savedConversationId = logEntry.id;
+    let persistenceStatus: 'saved' | 'unavailable' = 'saved';
+    try { savedConversationId = await writeConversation(logEntry); }
+    catch {
+      persistenceStatus = 'unavailable';
+      console.error('Conversation persistence unavailable');
+    }
 
     // Build response with optional actions
     const response: ChatResponse = {
@@ -843,7 +833,8 @@ I hope that helps!"
       sentimentScore: sentiment.score,
       sources,
       escalate,
-      conversationId: logEntry.id,
+      conversationId: savedConversationId,
+      persistenceStatus,
     };
 
     // Include FAQ actions if available

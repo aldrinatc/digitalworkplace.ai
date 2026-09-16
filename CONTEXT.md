@@ -539,3 +539,8 @@ supabase/migrations/
 - Sign-up page redesign
 - Real-time presence indicators
 - Product-specific dashboards
+
+
+## Reliability behavior (2026-09-16)
+
+Provider failures use the existing chat-message treatment with an explicit temporary-unavailability message. They must not display canned policy/metric claims, source citations, or confidence as if a live answer succeeded. No new visual component or motion pattern is introduced. Test Pilot client API calls include the `/dtq` base path. Keyword relevance is computed from the query and content, never assigned by row order.

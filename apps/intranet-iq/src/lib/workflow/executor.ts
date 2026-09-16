@@ -1,3 +1,4 @@
+import { anthropicOptions } from '@/lib/ai-provider';
 /**
  * Workflow Execution Engine
  * Actual execution engine for agentic workflows
@@ -99,9 +100,7 @@ export class WorkflowExecutor {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     this.supabase = createClient(supabaseUrl, supabaseAnonKey);
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY!,
-    });
+    this.anthropic = new Anthropic(anthropicOptions());
   }
 
   // =============================================================================
