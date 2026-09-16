@@ -1,16 +1,20 @@
 # Recovery savepoint — 16 September 2026
 
-Updated: **13:48 UTC / 17:48 Asia/Dubai**. This is the comprehensive continuation record, including the latest auth checks and the requested savepoint/closure.
+Updated: **14:08 UTC / 18:08 Asia/Dubai**. This continuation record includes activated cloud monitoring, the 15-minute response heartbeat, and the scaling-configuration review.
 
-## Stop state
+## Current state
 
-The latest instruction is **"Do Savepoint and close all to make sure it’s workable"**, following a request to verify production, especially auth. Foreground implementation is paused again. All five open Digital Workplace browser tabs were closed; no project development server was started in this review. The existing hourly uptime heartbeat remains ACTIVE, but its prompt now explicitly pauses feature work and publication of pending repairs while availability is healthy. The overall objective remains to make the main app and five sub-apps functional according to their intended scope, retaining digitalworkplace.ai as the main launcher and each sub-app's independent deployment. Do not claim 100% completion or guaranteed uptime; unresolved dependencies and unverified workflows remain.
+The latest instruction is **"make sure its scalable and on call , website and sub websites all work"**. This resumes operational work after the requested closure. The tested monitoring expansion is now published on work-fork `main`; the existing incident-response heartbeat is ACTIVE every 15 minutes. All six sites and the AI/database dependencies passed a full cloud run. No new application deployment, credential change, database mutation, paid upgrade or customer message occurred during this monitoring activation. The previous project tabs remain closed.
 
-Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous comprehensive savepoint commit `dae96ce`; this document is committed in its successor. Separate unpublished monitor work is backed up on `codex/site-uptime-monitor` at `e71950f`. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
+The overall objective remains a functional main launcher and five independently deployed sub-apps. Known feature/auth dependencies remain open. Do not claim 100% functionality, unlimited capacity, a staffed on-call service or guaranteed uptime.
+
+Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous savepoint commit `44bdfaa`; this document is committed in its successor. Monitor work is published on `codex/site-uptime-monitor` and work-fork `main` at `d8a0795`, and merged into the saved repair branch without deploying pending application code. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
 
 ## Live inventory and latest evidence
 
-Latest: **13:45:23 UTC / 17:45:23 Dubai**, all **19 public-site/auth probes passed on their first attempt** (six page checks, Clerk signing-key discovery, two main protection checks, and ten anonymous/invalid-token API checks). See [the auth verification record](2026-09-16-auth-verification.md). Existing signed-in main, Support and Chat Core sessions also survived reload during this review. Main admin read access rendered, but the console reported profile-update failures; the pending main repair is still necessary. Fresh login and new-account provisioning are not certified.
+Latest full cloud evidence: **14:00:37–14:00:40 UTC / 18:00 Dubai**, all **25 site/auth/AI/database probes passed** in [run 35105590721](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35105590721). A subsequent health-only dispatch [35106177495](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35106177495) also passed. The preceding local run passed at 13:59:35 UTC.
+
+At **13:45:23 UTC / 17:45:23 Dubai**, all **19 public-site/auth probes passed on their first attempt** (six page checks, Clerk signing-key discovery, two main protection checks, and ten anonymous/invalid-token API checks). See [the auth verification record](2026-09-16-auth-verification.md). Existing signed-in main, Support and Chat Core sessions also survived reload during this review. Main admin read access rendered, but the console reported profile-update failures; the pending main repair is still necessary. Fresh login and new-account provisioning are not certified.
 
 At approximately **13:21 UTC / 17:21 Dubai**, all six site entry points were also verified available. Main was freshly reloaded in the existing signed-in browser session and rendered all five product cards. Main sign-in and Support/Intranet/Chat Core/Test Pilot entry pages returned HTTP 200 with expected titles and no detected server error page. GRC rendered its dashboard in the browser; see its cookie/redirect behavior below.
 
@@ -19,7 +23,7 @@ At approximately **13:21 UTC / 17:21 Dubai**, all six site entry points were als
 | Main | https://www.digitalworkplace.ai/dashboard | digitalworkplace-ai | Existing live release; pending server repair NOT deployed |
 | Support | https://dsq.digitalworkplace.ai/dsq/demo/cor | support-iq | `dpl_9yUKQyj19V5t2Pur95P4dxVkqNby` |
 | Intranet | https://diq.digitalworkplace.ai/diq/dashboard | intranet-iq | Earlier AI/provider and route-prefix recovery; healthy in latest check |
-| Chat Core | https://dcq.digitalworkplace.ai/dcq/Home/index.html | chat-core | `dpl_62kinqrtgx2eP5rGSSpmcBrSHJHc` |
+| Chat Core | https://dcq.digitalworkplace.ai/dcq/Home/index.html | chat-core-iq | `dpl_62kinqrtgx2eP5rGSSpmcBrSHJHc` |
 | Test Pilot | https://dtq.digitalworkplace.ai/dtq/dashboard | test-iq | `dpl_GMdq5LWkR1ZGaop5qbwpirsL6dfP` |
 | GRC | https://auctorgrc.vercel.app | auctorgrc | Existing `dpl_6JvrXimxyBK2NJycBxvLDkbbk6zv`; no source changes |
 
@@ -29,43 +33,46 @@ The main protected dashboard returns 404 to a cookieless script; use `/sign-in` 
 
 ## Monitoring: actual state versus planned work
 
-### ACTIVE hourly Codex heartbeat
+### ACTIVE 15-minute Codex incident-response heartbeat
 
-- Name: **Digital Workplace uptime and repairs**.
-- Automation ID: `digital-workplace-uptime-and-repairs`.
-- Kind: heartbeat attached to this task; hourly; status ACTIVE, confirmed by its saved configuration and automation view.
+- Name: **Digital Workplace uptime and repairs**; ID `digital-workplace-uptime-and-repairs`; attached to the current task.
 - Configuration: `/Users/aldo-m5/.codex/automations/digital-workplace-uptime-and-repairs/automation.toml`.
-- Scope: verify sites/dependencies, confirm apparent outages, diagnose and make targeted reversible repairs within existing authorization, test/deploy only the affected app, and maintain a secret-free savepoint. Updated at closure: remain paused when availability is healthy; do not resume features or publish pending monitoring/repair work without user resumption.
-- Notifications: remain quiet for unchanged/non-actionable state; report meaningful outages, degradation, completed repairs, changed blockers or required input. Do not repeatedly ask about the same pending dependency.
-- Guardrails: preserve authentication/data, existing hosting projects, spending cap and pending credential/data-flow approvals; no real customer messages or bookings. Do not edit EIDS, whose directory is merely the task's unrelated current working directory.
-- Registration is verified; no first heartbeat execution has yet been observed. Do not treat this local app automation as continuously running cloud remediation or promise it runs regardless of host/scheduler availability.
+- Interval changed from hourly to 15 minutes; ACTIVE status and saved interval verified.
+- Checks site/auth/AI/database readiness and the cloud monitor's production-health job. Missing successful cloud health evidence for more than 45 minutes is a monitoring fault to investigate.
+- Confirms apparent failures, performs authorized targeted reversible incident repairs, tests/deploys only the affected existing app, and verifies recovery. No unrelated feature deployment when health is unchanged.
+- Notifications remain quiet for unchanged state; notify on a meaningful failure/degradation, completed repair, monitor fault, changed blocker or required user action. Do not repeat unchanged approval requests.
+- Preserve authentication/data, least privilege, approved spending and pending credential/data-flow approvals. No real customer messages/bookings or new credentials. EIDS is unrelated.
+- Registration is verified; a first automatic heartbeat execution has not yet been observed. It depends on host/scheduler availability and is not a staffed 24-hour response service.
 
-### Existing GitHub cloud workflow
+### ACTIVE expanded GitHub cloud monitor
 
-- Work repository: `aldrinatc/digitalworkplace.ai`, PUBLIC, default branch `main`.
-- Workflow: `.github/workflows/ai-reliability.yml`, ID `359513081`, API state **active**.
-- Current frequency: hourly. Current production probes: four AI + two database checks. Main and GRC page checks are not yet part of this script.
-- Earlier manual production health run `35091260998` passed. Recent push regression run `35096829446` passed (created 12:36:38 UTC).
-- **Automatic scheduling is not yet proven:** querying this workflow's latest `schedule` runs at this savepoint returned an empty list. Investigate GitHub scheduling/registration before claiming an operational scheduled cloud monitor. Enabled configuration is not execution evidence.
-- The current script is `scripts/check-ai-health.mjs`. GitHub failure notifications use existing account preferences; delivery has not been independently tested. No new external messaging integration was configured.
+- Repository: `aldrinatc/digitalworkplace.ai`, PUBLIC, default branch `main`.
+- Workflow: `.github/workflows/ai-reliability.yml`, ID `359513081`, API state **active**. Explicitly enabled after publishing the expansion.
+- Published monitor/runbook commit: **`d8a0795`** on work-fork `main` and `codex/site-uptime-monitor`.
+- Schedule: every 15 minutes, at UTC minute 2, 17, 32 and 47. Unlike the earlier savepoint, the expansion is now on the default branch.
+- Coverage: six page checks, public Clerk signing-key discovery, two protected main-route checks, ten anonymous/invalid-token sub-app API checks, four AI readiness checks, and two database checks: **25 total**.
+- First expanded manual cloud run **35105590721** passed production health, regression and durable-workflow tests. Health artifact creation succeeded.
+- Subsequent health-only manual dispatch **35106177495** passed production health; regression/durable jobs were correctly skipped. Push/PR events retain those tests.
+- **Automatic schedule execution is still pending verification:** the latest schedule-event query returned no runs. Enabled/default-branch configuration plus a successful dispatch is not evidence of an automatic scheduled run. The heartbeat now checks this gap independently and will flag stale monitoring.
+- Site/auth probes use four concurrent workers, a 20-second timeout, one retry, bounded same-origin redirects, and no saved user credentials. GRC's public demo cookie stays in memory. Main's 404 passes only with Clerk denial headers; protected APIs must return JSON 401. Ten focused tests passed.
+- The job has an eight-minute maximum and retains fixed-field health evidence for seven days. GitHub notification delivery depends on existing account settings and has not been tested. No new external paging service was configured.
+- Worktree: `/private/tmp/dwp-uptime-monitor-20260916`; its work is now also merged into the saved repair branch/permanent checkout. Do not push the deferred application branch to work-fork `main` just to update monitoring.
 
-### Prepared cloud-monitor expansion — tested, NOT activated
+### Scaling safeguards and limits
 
-The isolated worktree `/private/tmp/dwp-uptime-monitor-20260916`, branch **`codex/site-uptime-monitor`**, now contains committed work at **`e71950f`**, backed up to `aldrinatc/digitalworkplace.ai` on that branch. It remains separate from both work-fork `main` and the deferred application repair branch. The earlier failed patch changed nothing, but implementation was completed during the subsequent auth-verification review.
+Read-only Vercel API review confirmed the Pro work team and all six existing Next.js projects, each with Node 24, Fluid Compute, elastic concurrency and `iad1` function region. Chat Core's correct project name is **`chat-core-iq`**, ID `prj_xHsmvgobAhiyy4mukWcUDBl4aCK1`.
 
-- Added `scripts/site-auth-health.mjs`, `scripts/check-site-auth-health.mjs`, and `scripts/site-auth-health.test.mjs`.
-- Six page checks, public Clerk key discovery, two protected main routes, and five protected sub-app APIs tested anonymously and with an invalid token: **19 probes**. Existing AI/database script adds six checks.
-- Requests use bounded concurrency (four), a 20-second timeout and one retry. Main's cookieless 404 counts as protected only with Clerk's denial headers. API checks require JSON 401, not a generic page. GRC's public demo cookie stays in memory and on the same origin; redirects are bounded.
-- Ten focused tests passed; all 19 production probes passed on the first attempt at 13:45:23 UTC. Only fixed result fields are logged; no cookies, credentials or response bodies are retained.
-- Prepared workflow runs the probes with failure-preserving Bash pipelines, retains result artifacts for seven days, and proposes a 15-minute schedule. **That schedule is NOT active on the default branch.** It was not manually dispatched or observed as a scheduled cloud run before the user requested closure. A backup-branch push can run ordinary CI but does not install the default-branch schedule.
-- To activate after user resumption, apply only these monitor files to work-fork `main`, preserve any later regression-test additions, run/inspect the cloud job, and verify an actual scheduled execution. Do not merge or deploy pending application code as a shortcut.
-- Main Vercel Git linkage was verified as upstream `aldrinstellus/digitalworkplace.ai`, not the work fork.
+Support and Chat Core's existing local deployment settings use the Supabase transaction pooler, a connection limit of two and ten-second pool wait. Chat Core additionally bounds connect/idle/query timeouts. AI transport bounds request timeouts and disables SDK retry multiplication. Durable database-backed workflow state was previously deployed and its cloud tests remain green.
+
+A read-only aggregate snapshot through the existing least-privileged app role at approximately 14:07 UTC returned **60 configured database connections, 12 observed database backends, and 52,243,603 database bytes**. This is a point-in-time observation that includes shared/provider connections, not a safe concurrent-user limit or guaranteed spare capacity. No stress test or hosting/database upgrade was performed. Shared Clerk, Supabase and gateway limits still apply; the approved $50/month gateway auto-refill cap remains unchanged.
+
+See [the production operations runbook](../operations/production-on-call.md) for incident steps, verified safeguards, evidence limits and outstanding dependencies.
 
 ## Safe resume order
 
 1. Read this file; check current branch/dirty files and current deployment health. Preserve unrelated user changes.
-2. Respect the closure pause. On user resumption, address the main server credential dependency when specifically approved, then validate and deploy that repair independently; this is the outstanding auth repair.
-3. Activate the prepared monitoring expansion separately if resumed, and obtain evidence of automatic cloud execution without deploying application code.
+2. Address the main server credential dependency when specifically approved, then validate and deploy that repair independently; this is the outstanding auth repair.
+3. Verify an actual automatic schedule-event cloud run and heartbeat execution. The expansion is already activated; do not create a duplicate monitor. Preserve pending application repairs while maintaining monitoring.
 4. Repair Intranet search and knowledge retrieval end to end, verify Test Pilot's deployed browser workflow, and complete other available source-backed fixes.
 5. For Zoho delivery, GRC source access and other external dependencies, record the exact missing access rather than fabricate success or repeatedly request unchanged approvals.
 6. Record per-app test evidence, release IDs and rollback targets. Do not roll back a security migration to an unsafe permissive policy or deploy the whole pending branch indiscriminately.
@@ -143,4 +150,4 @@ Preserve the established design and distinguish intentionally simulated integrat
 - Gateway billing remains approved/configured: $5 trigger, $25 target, $50/month automatic refill cap (not an all-services spending cap).
 - Canonical work identity: `aldrin@atc.xyz`; GitHub/Vercel technical handle `aldrinatc`; Vercel team `aldos-projects-8cf34b67`; Supabase project `fhtempgkltrazrgbedrh`.
 - Deployment log: `/private/tmp/dwp-testpilot-resumed-deploy.log`; build log: `/private/tmp/dwp-testpilot-resumed-build.log`.
-- Latest work was read-only production/auth verification, local monitor preparation and savepoint/cleanup. No application deployment, database change, credential change or customer message occurred in this review. All project browser tabs were closed; no dev server was started. Production deployments and the existing monitor remain running.
+- Latest work activated the cloud monitor, updated the existing response heartbeat to 15 minutes, verified cloud results and reviewed capacity settings. No application deployment, database mutation, credential change, paid upgrade or customer message occurred. Project tabs remain closed and no dev server was started. Production deployments remain live.

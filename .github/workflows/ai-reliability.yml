@@ -4,12 +4,12 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '2,17,32,47 * * * *'
 permissions:
   contents: read
 jobs:
   regression:
-    if: github.event_name != 'schedule'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +19,32 @@ jobs:
       - run: npm install --ignore-scripts --no-audit --workspaces=false
       - run: node --experimental-strip-types --test scripts/ai-runtime.test.mjs
       - run: node --import tsx --test scripts/main-workplace.test.ts scripts/testpilot-demo-history.test.ts
+      - run: node --test scripts/site-auth-health.test.mjs
   production-health:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node scripts/check-ai-health.mjs
+      - name: Public sites and authentication boundaries
+        shell: bash
+        run: node scripts/check-site-auth-health.mjs | tee site-auth-health.jsonl
+      - name: AI and database readiness
+        if: always()
+        shell: bash
+        run: node scripts/check-ai-health.mjs | tee ai-health.jsonl
+      - name: Retain health evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-health
+          path: '*health.jsonl'
+          retention-days: 7
   durable-workflows:
-    if: github.event_name != 'schedule'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     services:
       postgres:
