@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resilientAIFetch, currentModel, aiHealth } from '../packages/ai-runtime/provider.ts';
+import { resilientAIFetch, currentModel, aiHealth, gatewayToken } from '../packages/ai-runtime/provider.ts';
 import { searchTerms, keywordRelevance, isPersistedThread } from '../apps/intranet-iq/src/lib/retrieval-quality.ts';
 
 const originalFetch = globalThis.fetch;
@@ -8,6 +8,7 @@ const envNames = ['AI_GATEWAY_API_KEY', 'VERCEL_OIDC_TOKEN', 'ANTHROPIC_API_KEY'
 const saved = Object.fromEntries(envNames.map(key => [key, process.env[key]]));
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
+  delete globalThis[Symbol.for('@vercel/request-context')];
   for (const key of envNames) {
     if (saved[key] === undefined) delete process.env[key];
     else process.env[key] = saved[key];
@@ -84,4 +85,13 @@ test('remote work retrieval ignores question stopwords and ranks matching policy
 test('demo thread IDs never reach UUID database queries', () => {
   assert.equal(isPersistedThread('thread-1'), false);
   assert.equal(isPersistedThread('0e9475aa-a111-4111-8111-112233445566'), true);
+});
+
+test('runtime OIDC uses fresh request identity without a production env token', () => {
+  configure(); delete process.env.VERCEL_OIDC_TOKEN;
+  let token = 'request-1';
+  globalThis[Symbol.for('@vercel/request-context')] = { get: () => ({ headers: { 'x-vercel-oidc-token': token } }) };
+  assert.equal(gatewayToken(), 'request-1');
+  token = 'request-2';
+  assert.equal(gatewayToken(), 'request-2');
 });

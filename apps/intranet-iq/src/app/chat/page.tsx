@@ -93,9 +93,7 @@ import { ConfidenceBadge } from "@/components/chat/ConfidenceBadge";
 import { MessageContentWithCitations, SourcesFooter } from "@/components/chat/CitationLink";
 
 const llmOptions = [
-  { id: "gpt-4", name: "GPT-4", provider: "OpenAI" },
-  { id: "claude-3", name: "Claude 3", provider: "Anthropic" },
-  { id: "custom", name: "Custom Model", provider: "Internal" },
+  { id: "claude-3", name: "AI Gateway", provider: "OpenAI" },
 ];
 
 const responseStyles = [
@@ -194,7 +192,7 @@ export default function ChatPage() {
 
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedLLM, setSelectedLLM] = useState(llmOptions[1]);
+  const [selectedLLM, setSelectedLLM] = useState(llmOptions[0]);
   const [responseStyle, setResponseStyle] = useState(responseStyles[1]);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

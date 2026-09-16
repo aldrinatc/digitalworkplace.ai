@@ -1,4 +1,4 @@
-import { openaiOptions } from '@/lib/ai-provider';
+import { gatewayToken, openaiOptions } from '@/lib/ai-provider';
 /**
  * OpenAI Provider Implementation
  * Implements BaseLLMProvider for GPT models
@@ -101,7 +101,7 @@ export class OpenAIProvider extends BaseLLMProvider {
   private client: unknown;
 
   constructor(apiKey?: string, defaultModel: LLMModel = 'gpt-4o') {
-    super(apiKey || (process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) || '', defaultModel);
+    super(apiKey || (process.env.OPENAI_API_KEY || gatewayToken()) || '', defaultModel);
   }
 
   private async getClient() {

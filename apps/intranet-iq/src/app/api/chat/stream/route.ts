@@ -1,6 +1,6 @@
 import { getRAGContextKeyword } from '@/lib/keyword-retrieval';
 import { isPersistedThread } from '@/lib/retrieval-quality';
-import { anthropicOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions } from '@/lib/ai-provider';
 /**
  * Streaming Chat API Route with Claude AI Integration
  * Uses Server-Sent Events (SSE) for real-time streaming responses
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
           })));
 
           // Check for API key
-          if (!(process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+          if (!(process.env.ANTHROPIC_API_KEY || gatewayToken())) {
             throw new Error('AI service temporarily unavailable');
           }
 

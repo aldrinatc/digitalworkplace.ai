@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --workspaces=false
       - run: node --experimental-strip-types --test scripts/ai-runtime.test.mjs
   production-health:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

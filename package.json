@@ -17,10 +17,12 @@
     "build:chatcore": "turbo build --filter=@digitalworkplace/chat-core-iq",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
-    "clean": "turbo clean && rm -rf node_modules"
+    "clean": "turbo clean && rm -rf node_modules",
+    "test:reliability": "node --experimental-strip-types --test scripts/ai-runtime.test.mjs"
   },
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "turbo": "^2.5.4",
+    "@vercel/oidc": "3.1.0"
   },
   "packageManager": "npm@10.2.0",
   "engines": {

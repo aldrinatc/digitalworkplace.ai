@@ -418,7 +418,7 @@ export default function ChatWidget() {
                     Ask me about your testing metrics
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    I have access to all 46 features with real-time data
+                    Ask about the features in your dashboard sample data
                   </p>
                 </motion.div>
               )}

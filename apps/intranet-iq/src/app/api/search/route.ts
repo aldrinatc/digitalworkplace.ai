@@ -1,4 +1,4 @@
-import { anthropicOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions } from '@/lib/ai-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { generateEmbedding } from '@/lib/embeddings';
@@ -19,7 +19,7 @@ import { requireAuthOrDemo } from '@/lib/api-auth';
 async function generateQueryEmbedding(text: string): Promise<number[] | null> {
   try {
     // Check if API key is available before attempting
-    if (!(process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    if (!(process.env.OPENAI_API_KEY || gatewayToken())) {
       console.warn('[Search] OPENAI_API_KEY not set, skipping embedding generation');
       return null;
     }
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
 
     // Get AI summary if we have results and Anthropic is configured
     let aiSummary = null;
-    if (results.length > 0 && (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    if (results.length > 0 && (process.env.ANTHROPIC_API_KEY || gatewayToken())) {
       try {
         const Anthropic = (await import('@anthropic-ai/sdk')).default;
         const anthropic = new Anthropic(anthropicOptions());

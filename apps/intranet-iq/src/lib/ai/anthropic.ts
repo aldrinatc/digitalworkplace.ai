@@ -1,4 +1,4 @@
-import { anthropicOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions } from '@/lib/ai-provider';
 /**
  * Anthropic Claude Provider Implementation
  * Implements BaseLLMProvider for Claude models
@@ -60,7 +60,7 @@ export class AnthropicProvider extends BaseLLMProvider {
   private client: unknown;
 
   constructor(apiKey?: string, defaultModel: LLMModel = 'claude-sonnet-4-20250514') {
-    super(apiKey || (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) || '', defaultModel);
+    super(apiKey || (process.env.ANTHROPIC_API_KEY || gatewayToken()) || '', defaultModel);
   }
 
   private async getClient() {

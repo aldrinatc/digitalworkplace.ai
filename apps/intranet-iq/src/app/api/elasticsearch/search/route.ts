@@ -1,4 +1,4 @@
-import { anthropicOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions } from '@/lib/ai-provider';
 import { NextRequest, NextResponse } from "next/server";
 import {
   search,
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Generate AI summary if Claude API is configured
     let aiSummary = null;
-    if (results.results.length > 0 && (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) && query) {
+    if (results.results.length > 0 && (process.env.ANTHROPIC_API_KEY || gatewayToken()) && query) {
       try {
         const Anthropic = (await import("@anthropic-ai/sdk")).default;
         const anthropic = new Anthropic(anthropicOptions());

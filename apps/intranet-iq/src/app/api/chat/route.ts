@@ -1,5 +1,5 @@
 import { getRAGContextKeyword } from '@/lib/keyword-retrieval';
-import { anthropicOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions } from '@/lib/ai-provider';
 import { isPersistedThread } from '@/lib/retrieval-quality';
 /**
  * Chat API Route with Claude AI Integration
@@ -626,7 +626,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Check if Anthropic API key is configured
-    if ((process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    if ((process.env.ANTHROPIC_API_KEY || gatewayToken())) {
       try {
         const Anthropic = (await import('@anthropic-ai/sdk')).default;
         const anthropic = new Anthropic(anthropicOptions());

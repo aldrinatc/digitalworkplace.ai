@@ -1,4 +1,4 @@
-import { anthropicOptions, openaiOptions } from '@/lib/ai-provider';
+import { gatewayToken, anthropicOptions, openaiOptions } from '@/lib/ai-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -93,7 +93,7 @@ let anthropic: Anthropic | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openai) {
-    if (!(process.env.OPENAI_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+    if (!(process.env.OPENAI_API_KEY || gatewayToken())) {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
     openai = new OpenAI(openaiOptions());
@@ -102,7 +102,7 @@ function getOpenAI(): OpenAI {
 }
 
 function getAnthropic(): Anthropic | null {
-  if (!anthropic && (process.env.ANTHROPIC_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
+  if (!anthropic && (process.env.ANTHROPIC_API_KEY || gatewayToken())) {
     anthropic = new Anthropic(anthropicOptions());
   }
   return anthropic;
