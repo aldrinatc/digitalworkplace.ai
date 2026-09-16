@@ -1,16 +1,18 @@
 # Recovery savepoint — 16 September 2026
 
-Updated: **13:29 UTC / 17:29 Asia/Dubai**. This is the comprehensive continuation record, including subsequent availability checks and monitoring setup.
+Updated: **13:48 UTC / 17:48 Asia/Dubai**. This is the comprehensive continuation record, including the latest auth checks and the requested savepoint/closure.
 
 ## Stop state
 
-The latest instruction is **"savepoint comprehensive"**. Foreground implementation is paused. The user subsequently requested ongoing uptime monitoring and safe issue repair; the hourly heartbeat described below remains ACTIVE. The overall objective remains to make the main app and five sub-apps functional according to their intended scope, retaining digitalworkplace.ai as the main launcher and each sub-app's independent deployment. Do not claim 100% completion or guaranteed uptime; unresolved dependencies and unverified workflows remain.
+The latest instruction is **"Do Savepoint and close all to make sure it’s workable"**, following a request to verify production, especially auth. Foreground implementation is paused again. All five open Digital Workplace browser tabs were closed; no project development server was started in this review. The existing hourly uptime heartbeat remains ACTIVE, but its prompt now explicitly pauses feature work and publication of pending repairs while availability is healthy. The overall objective remains to make the main app and five sub-apps functional according to their intended scope, retaining digitalworkplace.ai as the main launcher and each sub-app's independent deployment. Do not claim 100% completion or guaranteed uptime; unresolved dependencies and unverified workflows remain.
 
-Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous savepoint commit `ae5521c`; this document is committed in its successor. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
+Code is committed on `codex/deferred-workplace-repairs`, implementation commit `d516c4a`, previous comprehensive savepoint commit `dae96ce`; this document is committed in its successor. Separate unpublished monitor work is backed up on `codex/site-uptime-monitor` at `e71950f`. The permanent checkout is `/Users/aldo-m5/Documents/digitalworkplace-ai`; the working recovery checkout is `/private/tmp/digitalworkplace-recovery-20260916`. Neither environment files nor credentials belong in Git. The previous recovery baseline `f478e8e` remains on `codex/restore-multi-app-ai`.
 
 ## Live inventory and latest evidence
 
-At approximately **13:21 UTC / 17:21 Dubai**, all six site entry points were verified available. Main was freshly reloaded in the existing signed-in browser session and rendered all five product cards. Main sign-in and Support/Intranet/Chat Core/Test Pilot entry pages returned HTTP 200 with expected titles and no detected server error page. GRC rendered its dashboard in the browser; see its cookie/redirect behavior below.
+Latest: **13:45:23 UTC / 17:45:23 Dubai**, all **19 public-site/auth probes passed on their first attempt** (six page checks, Clerk signing-key discovery, two main protection checks, and ten anonymous/invalid-token API checks). See [the auth verification record](2026-09-16-auth-verification.md). Existing signed-in main, Support and Chat Core sessions also survived reload during this review. Main admin read access rendered, but the console reported profile-update failures; the pending main repair is still necessary. Fresh login and new-account provisioning are not certified.
+
+At approximately **13:21 UTC / 17:21 Dubai**, all six site entry points were also verified available. Main was freshly reloaded in the existing signed-in browser session and rendered all five product cards. Main sign-in and Support/Intranet/Chat Core/Test Pilot entry pages returned HTTP 200 with expected titles and no detected server error page. GRC rendered its dashboard in the browser; see its cookie/redirect behavior below.
 
 | App | Canonical entry point | Vercel project | Last recorded deployed repair |
 | --- | --- | --- | --- |
@@ -33,7 +35,7 @@ The main protected dashboard returns 404 to a cookieless script; use `/sign-in` 
 - Automation ID: `digital-workplace-uptime-and-repairs`.
 - Kind: heartbeat attached to this task; hourly; status ACTIVE, confirmed by its saved configuration and automation view.
 - Configuration: `/Users/aldo-m5/.codex/automations/digital-workplace-uptime-and-repairs/automation.toml`.
-- Scope: verify sites/dependencies, confirm apparent outages, diagnose and make targeted reversible repairs, test/deploy only the affected app, make bounded progress on known defects when healthy, and maintain a secret-free savepoint.
+- Scope: verify sites/dependencies, confirm apparent outages, diagnose and make targeted reversible repairs within existing authorization, test/deploy only the affected app, and maintain a secret-free savepoint. Updated at closure: remain paused when availability is healthy; do not resume features or publish pending monitoring/repair work without user resumption.
 - Notifications: remain quiet for unchanged/non-actionable state; report meaningful outages, degradation, completed repairs, changed blockers or required input. Do not repeatedly ask about the same pending dependency.
 - Guardrails: preserve authentication/data, existing hosting projects, spending cap and pending credential/data-flow approvals; no real customer messages or bookings. Do not edit EIDS, whose directory is merely the task's unrelated current working directory.
 - Registration is verified; no first heartbeat execution has yet been observed. Do not treat this local app automation as continuously running cloud remediation or promise it runs regardless of host/scheduler availability.
@@ -47,24 +49,23 @@ The main protected dashboard returns 404 to a cookieless script; use `/sign-in` 
 - **Automatic scheduling is not yet proven:** querying this workflow's latest `schedule` runs at this savepoint returned an empty list. Investigate GitHub scheduling/registration before claiming an operational scheduled cloud monitor. Enabled configuration is not execution evidence.
 - The current script is `scripts/check-ai-health.mjs`. GitHub failure notifications use existing account preferences; delivery has not been independently tested. No new external messaging integration was configured.
 
-### Proposed cloud-monitor expansion — NOT applied
+### Prepared cloud-monitor expansion — tested, NOT activated
 
-An isolated worktree was created at `/private/tmp/dwp-uptime-monitor-20260916`, branch `codex/site-uptime-monitor`, based on work-fork `main` at `f478e8e`. It is clean, has no new implementation commit, and its branch has not been pushed. The attempted patch failed validation because it deleted and added the same file in one patch. **No files changed; no new tests ran; no 15-minute schedule was installed.**
+The isolated worktree `/private/tmp/dwp-uptime-monitor-20260916`, branch **`codex/site-uptime-monitor`**, now contains committed work at **`e71950f`**, backed up to `aldrinatc/digitalworkplace.ai` on that branch. It remains separate from both work-fork `main` and the deferred application repair branch. The earlier failed patch changed nothing, but implementation was completed during the subsequent auth-verification review.
 
-Prepared design for resumption:
-
-1. Add expected-page checks for main sign-in and all five sub-apps alongside the six dependency probes.
-2. Use bounded parallel requests, a timeout, one retry, status/title/error-page checks, and truthful structured logs with no credentials or response bodies.
-3. Handle GRC's anonymous demo cookie in memory, forwarding only to the same origin and limiting redirects. Verified behavior: `/` returns 307 to `/dashboard` and sets `auctor_session`; `/dashboard` without that cookie redirects to `/`. Node fetch without a cookie jar loops, while the browser succeeds. Do not persist or print the cookie.
-4. Add tests for cookie redirects, cross-origin cookie refusal, redirect limits, retries, incorrect pages, unavailable AI funding and redacted errors.
-5. After passing tests and all 12 live probes, install the proposed 15-minute cloud schedule with bounded job duration and short-lived result artifacts. Dispatch it manually and inspect an actual automatic scheduled run.
-6. Apply only monitor files to work-fork `main`; do not merge the deferred main-app server repair as a shortcut. Main Vercel Git linkage was verified as upstream `aldrinstellus/digitalworkplace.ai`, not the work fork.
+- Added `scripts/site-auth-health.mjs`, `scripts/check-site-auth-health.mjs`, and `scripts/site-auth-health.test.mjs`.
+- Six page checks, public Clerk key discovery, two protected main routes, and five protected sub-app APIs tested anonymously and with an invalid token: **19 probes**. Existing AI/database script adds six checks.
+- Requests use bounded concurrency (four), a 20-second timeout and one retry. Main's cookieless 404 counts as protected only with Clerk's denial headers. API checks require JSON 401, not a generic page. GRC's public demo cookie stays in memory and on the same origin; redirects are bounded.
+- Ten focused tests passed; all 19 production probes passed on the first attempt at 13:45:23 UTC. Only fixed result fields are logged; no cookies, credentials or response bodies are retained.
+- Prepared workflow runs the probes with failure-preserving Bash pipelines, retains result artifacts for seven days, and proposes a 15-minute schedule. **That schedule is NOT active on the default branch.** It was not manually dispatched or observed as a scheduled cloud run before the user requested closure. A backup-branch push can run ordinary CI but does not install the default-branch schedule.
+- To activate after user resumption, apply only these monitor files to work-fork `main`, preserve any later regression-test additions, run/inspect the cloud job, and verify an actual scheduled execution. Do not merge or deploy pending application code as a shortcut.
+- Main Vercel Git linkage was verified as upstream `aldrinstellus/digitalworkplace.ai`, not the work fork.
 
 ## Safe resume order
 
 1. Read this file; check current branch/dirty files and current deployment health. Preserve unrelated user changes.
-2. Finish and verify cloud monitoring, including evidence of automatic execution, without deploying application code.
-3. Address the main server credential dependency when specifically approved, then validate and deploy that repair independently.
+2. Respect the closure pause. On user resumption, address the main server credential dependency when specifically approved, then validate and deploy that repair independently; this is the outstanding auth repair.
+3. Activate the prepared monitoring expansion separately if resumed, and obtain evidence of automatic cloud execution without deploying application code.
 4. Repair Intranet search and knowledge retrieval end to end, verify Test Pilot's deployed browser workflow, and complete other available source-backed fixes.
 5. For Zoho delivery, GRC source access and other external dependencies, record the exact missing access rather than fabricate success or repeatedly request unchanged approvals.
 6. Record per-app test evidence, release IDs and rollback targets. Do not roll back a security migration to an unsafe permissive policy or deploy the whole pending branch indiscriminately.
@@ -108,7 +109,7 @@ Specific approval was requested for both of these activations and remains **unan
 1. Store the existing Supabase service key only in the main app's Vercel server environment.
 2. Route search queries and indexed knowledge-base text through Vercel AI Gateway to OpenAI `text-embedding-3-small`, within the existing $50/month gateway auto-reload cap.
 
-No service key was copied/configured and the embedding opt-in remains disabled. Do not treat the pause or elapsed time as approval. A Supabase project dashboard tab was opened read-only during this phase; there were no new SQL changes.
+The latest read-only Vercel production environment listing confirmed that the main project still has no `SUPABASE_SERVICE_ROLE_KEY`. No service key was copied/configured and the embedding opt-in remains disabled. Do not treat the pause or elapsed time as approval. A Supabase project dashboard tab was opened read-only during this phase; there were no new SQL changes.
 
 After authorized activation: deploy main, verify existing-user sync, new-user provisioning without role escalation, admin persisted updates, session/page tracking and analytics; add main database health to monitoring only after it is live and healthy.
 
@@ -142,4 +143,4 @@ Preserve the established design and distinguish intentionally simulated integrat
 - Gateway billing remains approved/configured: $5 trigger, $25 target, $50/month automatic refill cap (not an all-services spending cap).
 - Canonical work identity: `aldrin@atc.xyz`; GitHub/Vercel technical handle `aldrinatc`; Vercel team `aldos-projects-8cf34b67`; Supabase project `fhtempgkltrazrgbedrh`.
 - Deployment log: `/private/tmp/dwp-testpilot-resumed-deploy.log`; build log: `/private/tmp/dwp-testpilot-resumed-build.log`.
-- Latest work was a local Test Pilot verification/deployment and read-only diagnosis. No dev server is intentionally left running.
+- Latest work was read-only production/auth verification, local monitor preparation and savepoint/cleanup. No application deployment, database change, credential change or customer message occurred in this review. All project browser tabs were closed; no dev server was started. Production deployments and the existing monitor remain running.
