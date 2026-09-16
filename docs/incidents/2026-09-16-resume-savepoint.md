@@ -14,6 +14,8 @@ Code is committed on `codex/deferred-workplace-repairs`, implementation commit `
 
 ## Live inventory and latest evidence
 
+**Heartbeat follow-up — 15:44 UTC / 19:44 Dubai:** all 25 local probes passed again. With no automatic GitHub run and stale cloud evidence, fallback [35117321480](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35117321480) passed all 25 probes and completed at 15:44:27 UTC. A one-time equivalent cron edit was published as `533960f` on work-fork `main`; push CI `35117398933` passed. The cadence stays at UTC minute 2/17/32/47, represented as `2/15 * * * *`. This is a registration-recovery attempt only; **MON-20260916-01 remains open** until a real automatic schedule-event health run succeeds. Do not repeat schedule edits without new evidence.
+
 **Monitoring incident — 14:51 UTC / 18:51 Dubai:** all 25 local probes passed, but successful cloud health evidence crossed 45 minutes with no automatic `schedule` runs recorded. Configuration, work identity and Actions enablement were verified. The safe manual fallback [35111394084](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35111394084) passed all 25 probes and completed at 14:51:51 UTC. **The automatic-schedule fault remains OPEN**; a manual refresh is not a scheduler repair. See [MON-20260916-01](2026-09-16-cloud-schedule-gap.md). Keep monitoring quietly unless the incident changes.
 
 **Heartbeat check — 14:32 UTC / 18:32 Dubai:** all 19 site/auth probes passed on the first attempt, and all six AI/database readiness checks passed. The work GitHub identity remained `aldrinatc` and the cloud workflow remained active. The schedule-event query still returned no runs; the latest successful cloud health run remained `35106177495`, completed at 14:06:01 UTC (about 27 minutes earlier, below the 45-minute stale-monitor threshold). No manual cloud dispatch, application deployment, credential change or database write was performed. The known auth dependency remains unchanged.
@@ -54,7 +56,7 @@ The main protected dashboard returns 404 to a cookieless script; use `/sign-in` 
 
 - Repository: `aldrinatc/digitalworkplace.ai`, PUBLIC, default branch `main`.
 - Workflow: `.github/workflows/ai-reliability.yml`, ID `359513081`, API state **active**. Explicitly enabled after publishing the expansion.
-- Published monitor/runbook commit: **`d8a0795`** on work-fork `main` and `codex/site-uptime-monitor`.
+- Published monitor/runbook baseline: **`d8a0795`**. Latest scheduler-only recovery attempt: **`533960f`** on work-fork `main` and `codex/site-uptime-monitor`; its CI passed. This is not a confirmed scheduler repair.
 - Schedule: every 15 minutes, at UTC minute 2, 17, 32 and 47. Unlike the earlier savepoint, the expansion is now on the default branch.
 - Coverage: six page checks, public Clerk signing-key discovery, two protected main-route checks, ten anonymous/invalid-token sub-app API checks, four AI readiness checks, and two database checks: **25 total**.
 - First expanded manual cloud run **35105590721** passed production health, regression and durable-workflow tests. Health artifact creation succeeded.

@@ -4,7 +4,7 @@ Updated 2026-09-16. Owner identity: `aldrin@atc.xyz`. Main launcher: https://www
 
 ## Monitoring and response
 
-**Current schedule incident:** [MON-20260916-01](../incidents/2026-09-16-cloud-schedule-gap.md) remains open as of 14:52 UTC. The heartbeat detected stale cloud evidence, and manual fallback run `35111394084` passed all 25 probes. Continue direct checks and bounded manual fallback, but do not mistake fresh manual results for repaired automatic scheduling. Avoid repeating unchanged incident alerts.
+**Current schedule incident:** [MON-20260916-01](../incidents/2026-09-16-cloud-schedule-gap.md) remains open as of 14:52 UTC. The heartbeat detected stale cloud evidence; the latest manual fallback `35117321480` passed all 25 probes at 15:44 UTC. A one-time equivalent cron edit at `533960f` passed CI, but scheduled execution remains unverified. Do not repeat schedule edits without new evidence. Continue direct checks and bounded manual fallback, but do not mistake fresh manual results for repaired automatic scheduling. Avoid repeating unchanged incident alerts.
 
 The work-fork default branch contains the active 15-minute GitHub Actions configuration in `.github/workflows/ai-reliability.yml`. It performs 25 read-only probes: six public pages, Clerk key discovery, two protected main routes, ten protected sub-app API checks, four AI readiness checks and two database checks. The first expanded cloud run [35105590721](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35105590721) passed all probes at approximately 14:00 UTC on 16 September 2026 and retained its evidence artifact.
 

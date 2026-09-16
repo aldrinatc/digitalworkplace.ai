@@ -26,6 +26,16 @@ Fresh cloud evidence is restored, but the **automatic schedule fault remains ope
 
 No application deployment, database mutation, credential change, security relaxation, spending increase or customer communication occurred. No new automation or monitoring service was created.
 
+## 15:44 UTC follow-up and bounded repair attempt
+
+The 15:42 heartbeat again passed all 25 local probes. No `schedule` events were recorded, and the preceding manual cloud result was older than 45 minutes. Fallback [run 35117321480](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35117321480) passed all 25 probes and completed at **15:44:27 UTC**.
+
+A one-time scheduler-registration recovery attempt was published at commit **`533960f`** on work-fork `main` and `codex/site-uptime-monitor`. The cron expression was changed from the explicit minute list to the equivalent `2/15 * * * *`, preserving UTC minute **2, 17, 32 and 47** and the 15-minute frequency. The existing workflow was explicitly enabled. Only the workflow's schedule/comment changed; application code, permissions, provider routes and spending did not change. [Push CI 35117398933](https://github.com/aldrinatc/digitalworkplace.ai/actions/runs/35117398933) passed.
+
+GitHub documents that a cron edit can reactivate a deactivated schedule and change its actor, and documents the starting-minute/step syntax. This workflow already reported active, so whether that mechanism will resolve this incident is **unproven**. This is a bounded recovery attempt, not an established root cause or confirmed repair. [GitHub schedule documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+**Do not repeat schedule edits or enable/disable cycles without new evidence.** Wait for a real automatic `schedule` event and inspect its production-health result. A manual run or successful push CI cannot close this incident. The latest fallback ran before the schedule-only commit; its unchanged health-probe logic was not redeployed to any app.
+
 ## Subsequent checks
 
 1. Check for a real `schedule` event and inspect its production-health job; a push or `workflow_dispatch` event cannot close this incident.
