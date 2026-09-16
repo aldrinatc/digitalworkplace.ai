@@ -14,6 +14,8 @@ export const probes = [
   { id: 'clerk-public-keys', url: 'https://clerk.digitalworkplace.ai/.well-known/jwks.json', kind: 'jwks' },
   ...['dashboard', 'admin'].map(path => ({ id: `main-${path}-anonymous`, url: `https://www.digitalworkplace.ai/${path}`, kind: 'clerk-protection' })),
   ...privateApi('support-drafts', 'https://dsq.digitalworkplace.ai/dsq/api/drafts'),
+  ...privateApi('intranet-admin-stats', 'https://diq.digitalworkplace.ai/diq/api/admin/stats'),
+  { id: 'intranet-admin-stats-forged-origin', url: 'https://diq.digitalworkplace.ai/diq/api/admin/stats', kind: 'private-api', mode: 'forged-origin' },
   ...privateApi('chat-core-access', 'https://dcq.digitalworkplace.ai/dcq/api/admin/access'),
   ...privateApi('chat-core-documents', 'https://dcq.digitalworkplace.ai/dcq/api/documents'),
   ...privateApi('chat-core-logs', 'https://dcq.digitalworkplace.ai/dcq/api/log'),
@@ -29,6 +31,10 @@ async function request(probe, fetcher, signal) {
   for (let redirects = 0; redirects <= 5; redirects++) {
     const headers = { 'User-Agent': 'DigitalWorkplace-Availability-Check/1.0' };
     if (probe.mode === 'invalid-token') headers.Authorization = 'Bearer invalid.auth-check.token';
+    if (probe.mode === 'forged-origin') {
+      headers.Origin = 'https://intranet-iq.vercel.app';
+      headers.Referer = 'https://intranet-iq.vercel.app/diq/admin';
+    }
     if (demoCookie) headers.Cookie = demoCookie;
     const response = await fetcher(url, { headers, redirect: 'manual', signal });
     if (![301, 302, 303, 307, 308].includes(response.status)) return response;

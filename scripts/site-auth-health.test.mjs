@@ -60,10 +60,12 @@ test('Clerk protection requires its denial marker; an unrelated 404 cannot pass'
 });
 
 test('private APIs must reject both anonymous and invalid tokens as JSON 401', async () => {
-  for (const mode of ['anonymous', 'invalid-token']) {
+  for (const mode of ['anonymous', 'invalid-token', 'forged-origin']) {
     const probe = { ...page, kind: 'private-api', mode };
     const result = await runProbe(probe, options(async (_url, init) => {
       assert.equal(init.headers.Authorization, mode === 'invalid-token' ? 'Bearer invalid.auth-check.token' : undefined);
+      assert.equal(init.headers.Origin, mode === 'forged-origin' ? 'https://intranet-iq.vercel.app' : undefined);
+      assert.equal(init.headers.Referer, mode === 'forged-origin' ? 'https://intranet-iq.vercel.app/diq/admin' : undefined);
       return Response.json({ error: 'Sign in' }, { status: 401 });
     }));
     assert.equal(result.status, 'passed');
