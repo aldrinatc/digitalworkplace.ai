@@ -1,212 +1,80 @@
-import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-
-const DATA_FILE = path.join(process.cwd(), "data", "workflow-routing.json");
-
-interface RoutingRule {
-  id: string;
-  name: string;
-  category: string;
-  keywords: string[];
-  targetDepartment: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  slaHours: number;
-  autoAssign: boolean;
-  isActive: boolean;
-  createdAt: string;
+import { NextRequest, NextResponse } from 'next/server';
+import { validateAdminRequest } from '@/lib/api-auth';
+import {
+  listRoutingRules,
+  saveRoutingRule,
+  deactivateRoutingRule,
+  WorkflowStoreError,
+} from '@/lib/server/workflow-store';
+export const dynamic = 'force-dynamic';
+function failed(error: unknown) {
+  return NextResponse.json(
+    {
+      error:
+        error instanceof WorkflowStoreError
+          ? error.message
+          : 'Routing configuration is unavailable',
+    },
+    { status: error instanceof WorkflowStoreError ? error.status : 503 },
+  );
 }
-
-async function readRules(): Promise<RoutingRule[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-async function writeRules(rules: RoutingRule[]): Promise<void> {
-  await fs.writeFile(DATA_FILE, JSON.stringify(rules, null, 2));
-}
-
-// GET - List all routing rules
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get("activeOnly") === "true";
-    const department = searchParams.get("department");
-    const category = searchParams.get("category");
-
-    let rules = await readRules();
-
-    if (activeOnly) {
-      rules = rules.filter((r) => r.isActive);
-    }
-    if (department) {
-      rules = rules.filter((r) => r.targetDepartment === department);
-    }
-    if (category) {
-      rules = rules.filter((r) => r.category === category);
-    }
-
-    // Sort by priority (urgent first) then by name
-    const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-    rules.sort((a, b) => {
-      const priorityCompare = priorityOrder[a.priority] - priorityOrder[b.priority];
-      if (priorityCompare !== 0) return priorityCompare;
-      return a.name.localeCompare(b.name);
-    });
-
+    const p = request.nextUrl.searchParams;
+    let rules = await listRoutingRules();
+    if (p.get('activeOnly') === 'true') rules = rules.filter((r) => r.isActive);
+    if (p.get('department'))
+      rules = rules.filter((r) => r.targetDepartment === p.get('department'));
+    if (p.get('category'))
+      rules = rules.filter((r) => r.category === p.get('category'));
     return NextResponse.json(rules);
   } catch (error) {
-    console.error("Error fetching routing rules:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch routing rules" },
-      { status: 500 }
-    );
+    return failed(error);
   }
 }
-
-// POST - Create new routing rule
 export async function POST(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
-    const {
-      name,
-      category,
-      keywords,
-      targetDepartment,
-      priority,
-      slaHours,
-      autoAssign,
-    } = body;
-
-    if (!name || !category || !targetDepartment) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const rules = await readRules();
-
-    const newRule: RoutingRule = {
-      id: `route-${Date.now()}`,
-      name,
-      category,
-      keywords: keywords || [],
-      targetDepartment,
-      priority: priority || "medium",
-      slaHours: slaHours || 48,
-      autoAssign: autoAssign || false,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    rules.push(newRule);
-    await writeRules(rules);
-
-    return NextResponse.json(newRule, { status: 201 });
-  } catch (error) {
-    console.error("Error creating routing rule:", error);
     return NextResponse.json(
-      { error: "Failed to create routing rule" },
-      { status: 500 }
+      await saveRoutingRule({
+        ...body,
+        id: undefined,
+        keywords: body.keywords || [],
+        priority: body.priority || 'medium',
+        slaHours: body.slaHours ?? 48,
+        autoAssign: body.autoAssign ?? false,
+        isActive: true,
+      }),
+      { status: 201 },
     );
+  } catch (error) {
+    return failed(error);
   }
 }
-
-// PUT - Update routing rule
 export async function PUT(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Routing rule ID required" },
-        { status: 400 }
-      );
-    }
-
-    const rules = await readRules();
-    const index = rules.findIndex((r) => r.id === id);
-
-    if (index === -1) {
-      return NextResponse.json(
-        { error: "Routing rule not found" },
-        { status: 404 }
-      );
-    }
-
-    rules[index] = {
-      ...rules[index],
-      ...updates,
-    };
-
-    await writeRules(rules);
-
-    return NextResponse.json(rules[index]);
+    const old = (await listRoutingRules()).find((r) => r.id === body.id);
+    if (!old) throw new WorkflowStoreError('Routing rule not found', 404);
+    return NextResponse.json(await saveRoutingRule({ ...old, ...body }));
   } catch (error) {
-    console.error("Error updating routing rule:", error);
-    return NextResponse.json(
-      { error: "Failed to update routing rule" },
-      { status: 500 }
-    );
+    return failed(error);
   }
 }
-
-// DELETE - Delete routing rule
 export async function DELETE(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Routing rule ID required" },
-        { status: 400 }
-      );
-    }
-
-    const rules = await readRules();
-    const index = rules.findIndex((r) => r.id === id);
-
-    if (index === -1) {
-      return NextResponse.json(
-        { error: "Routing rule not found" },
-        { status: 404 }
-      );
-    }
-
-    rules.splice(index, 1);
-    await writeRules(rules);
-
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) throw new WorkflowStoreError('Routing rule ID required');
+    if (!(await deactivateRoutingRule(id)))
+      throw new WorkflowStoreError('Routing rule not found', 404);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting routing rule:", error);
-    return NextResponse.json(
-      { error: "Failed to delete routing rule" },
-      { status: 500 }
-    );
+    return failed(error);
   }
-}
-
-// Helper function to match text against routing rules
-export function matchRoutingRule(text: string, rules: RoutingRule[]): RoutingRule | null {
-  const lowerText = text.toLowerCase();
-
-  for (const rule of rules) {
-    if (!rule.isActive) continue;
-
-    for (const keyword of rule.keywords) {
-      if (lowerText.includes(keyword.toLowerCase())) {
-        return rule;
-      }
-    }
-  }
-
-  // Return general inquiry rule if no match
-  return rules.find((r) => r.category === "general" && r.isActive) || null;
 }

@@ -203,7 +203,7 @@ export default function AuditLogsPage() {
       if (searchQuery) params.set("search", searchQuery);
       params.set("days", dateFilter.replace("d", ""));
 
-      const response = await fetch(`/api/audit-logs?${params}`);
+      const response = await fetch(`/dcq/api/audit-logs?${params}`);
       if (response.ok) {
         const data = await response.json();
         setLogs(data.logs || generateDemoLogs());

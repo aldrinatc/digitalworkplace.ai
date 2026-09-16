@@ -201,7 +201,7 @@ export default function AppointmentsPage() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/appointments/config?id=${config.id}`, {
+          const res = await fetch(`/dcq/api/appointments/config?id=${config.id}`, {
             method: "DELETE",
           });
           if (res.ok) {

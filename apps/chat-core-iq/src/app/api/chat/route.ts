@@ -17,7 +17,8 @@ import {
   getWorkflowType,
   isInWorkflow,
   setLanguage as setStateLanguage,
-  clearWorkflow
+  clearWorkflow,
+  withConversationState
 } from '@/lib/conversation-state';
 import {
   startAppointmentFlow,
@@ -419,6 +420,7 @@ export async function POST(request: NextRequest) {
 
     // Session management
     const sessionId = providedSessionId || `session_${Date.now()}`;
+    const workflowResult = await withConversationState(sessionId, async () => {
     setStateLanguage(sessionId, detectedLanguage);
 
     // Check for workflow command (button click)
@@ -522,6 +524,10 @@ export async function POST(request: NextRequest) {
         }, { headers: getCorsHeaders(request) });
       }
     }
+
+      return null;
+    });
+    if (workflowResult) return workflowResult;
 
     // ========================================================================
     // TYLER TECHNOLOGIES INTEGRATION

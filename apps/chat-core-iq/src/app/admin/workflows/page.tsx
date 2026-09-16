@@ -306,7 +306,7 @@ export default function WorkflowsPage() {
 
     setSaving(true);
     try {
-      const url = "/api/workflows/types";
+      const url = apiUrl("/api/workflows/types");
       const method = editingType ? "PUT" : "POST";
       const body = editingType
         ? { id: editingType.id, ...formData }
@@ -344,7 +344,7 @@ export default function WorkflowsPage() {
     }
 
     try {
-      const res = await fetch(`/api/workflows/types?id=${type.id}`, {
+      const res = await fetch(`/dcq/api/workflows/types?id=${type.id}`, {
         method: "DELETE",
       });
 

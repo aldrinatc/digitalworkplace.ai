@@ -7,6 +7,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { listRoutingRules, listAppointmentConfigs } from './server/workflow-store';
 
 // Types
 export interface WorkflowIntent {
@@ -91,33 +92,8 @@ const SERVICE_REQUEST_KEYWORDS = [
 // Data file paths
 const DATA_DIR = path.join(process.cwd(), 'data');
 
-/**
- * Load routing rules from JSON file
- */
-async function loadRoutingRules(): Promise<RoutingRule[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'workflow-routing.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    console.error('Failed to load routing rules');
-    return [];
-  }
-}
-
-/**
- * Load appointment configurations from JSON file
- */
-async function loadAppointmentConfigs(): Promise<AppointmentConfig[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'appointment-config.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    console.error('Failed to load appointment configs');
-    return [];
-  }
-}
+const loadRoutingRules = listRoutingRules;
+const loadAppointmentConfigs = listAppointmentConfigs;
 
 /**
  * Load FAQs from JSON file

@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const sourceSession = typeof body.sessionId === 'string' ? await getSessionById(body.sessionId) : null;
+      if (!sourceSession || sourceSession.channel !== channel || sourceSession.userId !== userId) {
+        return NextResponse.json({ error: 'A valid source session is required' }, { status: 403, headers: corsHeaders });
+      }
       const token = await generateCrossChannelToken(channel, userId);
 
       return NextResponse.json({
@@ -79,11 +83,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log('[Session API] Redeeming token:', token, 'for', targetChannel, targetUserId);
       const session = await redeemCrossChannelToken(token, targetChannel, targetUserId);
 
       if (!session) {
-        console.log('[Session API] Token invalid/expired/used:', token);
         return NextResponse.json(
           { error: 'Invalid, expired, or already used token' },
           { status: 400, headers: corsHeaders }

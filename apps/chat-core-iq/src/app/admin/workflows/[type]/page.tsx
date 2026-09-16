@@ -136,7 +136,7 @@ export default function DynamicWorkflowPage() {
       setWorkflowType(type);
 
       // Fetch categories for this workflow type
-      const catsRes = await fetch(`/api/workflows/categories?workflowTypeId=${type.id}`);
+      const catsRes = await fetch(`/dcq/api/workflows/categories?workflowTypeId=${type.id}`);
       if (catsRes.ok) {
         const cats = await catsRes.json();
         setCategories(cats);
@@ -204,7 +204,7 @@ export default function DynamicWorkflowPage() {
     }
 
     try {
-      const res = await fetch(`/api/workflows/categories?id=${category.id}`, {
+      const res = await fetch(`/dcq/api/workflows/categories?id=${category.id}`, {
         method: "DELETE",
       });
 

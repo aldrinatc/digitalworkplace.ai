@@ -1,200 +1,77 @@
-import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-
-const DATA_FILE = path.join(process.cwd(), "data", "appointment-config.json");
-
-interface TimeSlot {
-  start: string;
-  end: string;
+import { NextRequest, NextResponse } from 'next/server';
+import { validateAdminRequest } from '@/lib/api-auth';
+import {
+  listAppointmentConfigs,
+  saveAppointmentConfig,
+  deactivateAppointmentConfig,
+  WorkflowStoreError,
+} from '@/lib/server/workflow-store';
+export const dynamic = 'force-dynamic';
+function failed(error: unknown) {
+  return NextResponse.json(
+    {
+      error:
+        error instanceof WorkflowStoreError
+          ? error.message
+          : 'Appointment configuration is unavailable',
+    },
+    { status: error instanceof WorkflowStoreError ? error.status : 503 },
+  );
 }
-
-interface AppointmentConfig {
-  id: string;
-  department: string;
-  serviceName: string;
-  description: string;
-  duration: number;
-  availableDays: string[];
-  timeSlots: TimeSlot[];
-  maxPerSlot: number;
-  leadTimeHours: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-async function readConfigs(): Promise<AppointmentConfig[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-async function writeConfigs(configs: AppointmentConfig[]): Promise<void> {
-  await fs.writeFile(DATA_FILE, JSON.stringify(configs, null, 2));
-}
-
-// GET - List all appointment configurations
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get("activeOnly") === "true";
-    const department = searchParams.get("department");
-
-    let configs = await readConfigs();
-
-    if (activeOnly) {
+    const p = request.nextUrl.searchParams;
+    let configs = await listAppointmentConfigs();
+    if (p.get('activeOnly') === 'true')
       configs = configs.filter((c) => c.isActive);
-    }
-    if (department) {
-      configs = configs.filter((c) => c.department === department);
-    }
-
-    // Sort by department and service name
-    configs.sort((a, b) => {
-      const deptCompare = a.department.localeCompare(b.department);
-      if (deptCompare !== 0) return deptCompare;
-      return a.serviceName.localeCompare(b.serviceName);
-    });
-
+    if (p.get('department'))
+      configs = configs.filter((c) => c.department === p.get('department'));
     return NextResponse.json(configs);
   } catch (error) {
-    console.error("Error fetching appointment configs:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch configurations" },
-      { status: 500 }
-    );
+    return failed(error);
   }
 }
-
-// POST - Create new appointment configuration
 export async function POST(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
-    const {
-      department,
-      serviceName,
-      description,
-      duration,
-      availableDays,
-      timeSlots,
-      maxPerSlot,
-      leadTimeHours,
-    } = body;
-
-    if (!department || !serviceName || !duration || !availableDays || !timeSlots) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const configs = await readConfigs();
-
-    const newConfig: AppointmentConfig = {
-      id: `apt-${Date.now()}`,
-      department,
-      serviceName,
-      description: description || "",
-      duration,
-      availableDays,
-      timeSlots,
-      maxPerSlot: maxPerSlot || 1,
-      leadTimeHours: leadTimeHours || 24,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    configs.push(newConfig);
-    await writeConfigs(configs);
-
-    return NextResponse.json(newConfig, { status: 201 });
-  } catch (error) {
-    console.error("Error creating appointment config:", error);
     return NextResponse.json(
-      { error: "Failed to create configuration" },
-      { status: 500 }
+      await saveAppointmentConfig({
+        ...body,
+        id: undefined,
+        isActive: true,
+        maxPerSlot: body.maxPerSlot ?? 1,
+        leadTimeHours: body.leadTimeHours ?? 24,
+      }),
+      { status: 201 },
     );
+  } catch (error) {
+    return failed(error);
   }
 }
-
-// PUT - Update appointment configuration
 export async function PUT(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Configuration ID required" },
-        { status: 400 }
-      );
-    }
-
-    const configs = await readConfigs();
-    const index = configs.findIndex((c) => c.id === id);
-
-    if (index === -1) {
-      return NextResponse.json(
-        { error: "Configuration not found" },
-        { status: 404 }
-      );
-    }
-
-    configs[index] = {
-      ...configs[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await writeConfigs(configs);
-
-    return NextResponse.json(configs[index]);
+    const old = (await listAppointmentConfigs()).find((c) => c.id === body.id);
+    if (!old) throw new WorkflowStoreError('Configuration not found', 404);
+    return NextResponse.json(await saveAppointmentConfig({ ...old, ...body }));
   } catch (error) {
-    console.error("Error updating appointment config:", error);
-    return NextResponse.json(
-      { error: "Failed to update configuration" },
-      { status: 500 }
-    );
+    return failed(error);
   }
 }
-
-// DELETE - Delete appointment configuration
 export async function DELETE(request: NextRequest) {
+  const denied = await validateAdminRequest(request);
+  if (denied) return denied;
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Configuration ID required" },
-        { status: 400 }
-      );
-    }
-
-    const configs = await readConfigs();
-    const index = configs.findIndex((c) => c.id === id);
-
-    if (index === -1) {
-      return NextResponse.json(
-        { error: "Configuration not found" },
-        { status: 404 }
-      );
-    }
-
-    configs.splice(index, 1);
-    await writeConfigs(configs);
-
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) throw new WorkflowStoreError('Configuration ID required');
+    if (!(await deactivateAppointmentConfig(id)))
+      throw new WorkflowStoreError('Configuration not found', 404);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting appointment config:", error);
-    return NextResponse.json(
-      { error: "Failed to delete configuration" },
-      { status: 500 }
-    );
+    return failed(error);
   }
 }

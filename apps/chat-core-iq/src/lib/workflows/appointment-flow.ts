@@ -5,8 +5,7 @@
  * Handles service selection, date/time picking, and confirmation.
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { listAppointmentConfigs, availableAppointmentSlots, reserveAppointment, WorkflowStoreError } from '../server/workflow-store';
 import {
   getOrCreateState,
   advanceWorkflow,
@@ -52,43 +51,7 @@ export interface AppointmentFlowResponse {
   };
 }
 
-// Data file paths
-const DATA_DIR = path.join(process.cwd(), 'data');
-
-/**
- * Load appointment configurations
- */
-async function loadAppointmentConfigs(): Promise<AppointmentConfig[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'appointment-config.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    console.error('Failed to load appointment configs');
-    return [];
-  }
-}
-
-/**
- * Load existing appointments
- */
-async function loadAppointments(): Promise<Appointment[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'appointments.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Save appointments to file
- */
-async function saveAppointments(appointments: Appointment[]): Promise<void> {
-  const filePath = path.join(DATA_DIR, 'appointments.json');
-  await fs.writeFile(filePath, JSON.stringify(appointments, null, 2), 'utf-8');
-}
+const loadAppointmentConfigs = listAppointmentConfigs;
 
 /**
  * Get available services (active appointment configs)
@@ -137,50 +100,7 @@ export async function getAvailableDates(serviceId: string): Promise<string[]> {
  * Get available time slots for a service on a specific date
  */
 export async function getAvailableSlots(serviceId: string, date: string): Promise<string[]> {
-  const configs = await loadAppointmentConfigs();
-  const config = configs.find(c => c.id === serviceId);
-
-  if (!config || !config.isActive) {
-    return [];
-  }
-
-  const appointments = await loadAppointments();
-  const duration = config.duration || 30;
-  const maxPerSlot = config.maxPerSlot || 1;
-
-  // Count existing appointments per slot
-  const bookedSlots: Record<string, number> = {};
-  for (const apt of appointments) {
-    if (apt.configId === serviceId && apt.date === date && apt.status !== 'cancelled') {
-      bookedSlots[apt.timeSlot] = (bookedSlots[apt.timeSlot] || 0) + 1;
-    }
-  }
-
-  // Generate all possible slots
-  const availableSlots: string[] = [];
-
-  for (const range of config.timeSlots) {
-    const [startHour, startMin] = range.start.split(':').map(Number);
-    const [endHour, endMin] = range.end.split(':').map(Number);
-
-    let currentMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-
-    while (currentMinutes + duration <= endMinutes) {
-      const hour = Math.floor(currentMinutes / 60);
-      const minute = currentMinutes % 60;
-      const slot = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-
-      const booked = bookedSlots[slot] || 0;
-      if (booked < maxPerSlot) {
-        availableSlots.push(slot);
-      }
-
-      currentMinutes += duration;
-    }
-  }
-
-  return availableSlots;
+  return availableAppointmentSlots(serviceId, date);
 }
 
 /**
@@ -194,32 +114,10 @@ export async function createAppointment(
     return null;
   }
 
-  const appointments = await loadAppointments();
-
-  // Generate new ID
-  const maxId = appointments.reduce((max, apt) => {
-    const num = parseInt(apt.id.replace('book-', ''), 10);
-    return isNaN(num) ? max : Math.max(max, num);
-  }, 0);
-
-  const newAppointment: Appointment = {
-    id: `book-${(maxId + 1).toString().padStart(3, '0')}`,
-    configId: data.selectedServiceId,
-    userName: data.userName,
-    userEmail: data.userEmail,
-    userPhone: data.userPhone || '',
-    date: data.selectedDate,
-    timeSlot: data.selectedTime,
-    status: 'confirmed',
-    reason: '',
-    notes: 'Booked via chatbot',
-    createdAt: new Date().toISOString()
-  };
-
-  appointments.push(newAppointment);
-  await saveAppointments(appointments);
-
-  return newAppointment;
+  return reserveAppointment({
+    configId: data.selectedServiceId, userName: data.userName, userEmail: data.userEmail, userPhone: data.userPhone || '',
+    date: data.selectedDate, timeSlot: data.selectedTime, status: 'confirmed', reason: '', notes: 'Booked via chatbot'
+  });
 }
 
 /**
@@ -634,7 +532,16 @@ export async function confirmAppointment(
   const data = state.workflowData as AppointmentWorkflowData;
 
   // Create the appointment
-  const appointment = await createAppointment(data);
+  let appointment: Appointment | null;
+  try {
+    appointment = await createAppointment(data);
+  } catch (error) {
+    if (error instanceof WorkflowStoreError && error.status === 409) {
+      const retry = await startAppointmentFlow(sessionId, language, data.selectedServiceId);
+      return { ...retry, message: 'That time was just booked. Please choose another available time.\n\n' + retry.message, messageEs: 'Ese horario acaba de reservarse. Elige otro horario disponible.\n\n' + (retry.messageEs || retry.message) };
+    }
+    throw error;
+  }
 
   // Clear the workflow
   clearWorkflow(sessionId);
@@ -669,8 +576,8 @@ export async function confirmAppointment(
   const formattedTime = formatTime(appointment.timeSlot);
 
   return {
-    message: `**Your appointment is confirmed!**\n\n**Confirmation #:** ${appointment.id.toUpperCase()}\n**Service:** ${serviceName}\n**Date:** ${formattedDate}\n**Time:** ${formattedTime}\n\nA confirmation email has been sent to ${appointment.userEmail}.\n\nIs there anything else I can help you with?`,
-    messageEs: `**¡Tu cita está confirmada!**\n\n**Confirmación #:** ${appointment.id.toUpperCase()}\n**Servicio:** ${serviceName}\n**Fecha:** ${formattedDate}\n**Hora:** ${formattedTime}\n\nSe ha enviado un correo de confirmación a ${appointment.userEmail}.\n\n¿Hay algo más en lo que pueda ayudarte?`,
+    message: `**Your appointment has been saved!**\n\n**Confirmation #:** ${appointment.id.toUpperCase()}\n**Service:** ${serviceName}\n**Date:** ${formattedDate}\n**Time:** ${formattedTime}\n\nKeep this confirmation number for your records.\n\nIs there anything else I can help you with?`,
+    messageEs: `**¡Tu cita se ha guardado!**\n\n**Confirmación #:** ${appointment.id.toUpperCase()}\n**Servicio:** ${serviceName}\n**Fecha:** ${formattedDate}\n**Hora:** ${formattedTime}\n\nGuarda este número de confirmación para tus registros.\n\n¿Hay algo más en lo que pueda ayudarte?`,
     actions: [],
     workflowState: {
       active: false,
@@ -692,7 +599,6 @@ export async function confirmAppointment(
  */
 export function cancelAppointmentFlow(
   sessionId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _language: Language = 'en'
 ): AppointmentFlowResponse {
   clearWorkflow(sessionId);

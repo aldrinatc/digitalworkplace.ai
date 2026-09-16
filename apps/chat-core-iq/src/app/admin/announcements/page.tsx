@@ -352,7 +352,7 @@ export default function Announcements() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/announcements?id=${id}`, {
+          const response = await fetch(`/dcq/api/announcements?id=${id}`, {
             method: "DELETE",
           });
           if (response.ok) {
@@ -441,7 +441,7 @@ export default function Announcements() {
       onConfirm: async () => {
         try {
           const deletePromises = Array.from(selectedIds).map((id) =>
-            fetch(`/api/announcements?id=${id}`, { method: "DELETE" })
+            fetch(`/dcq/api/announcements?id=${id}`, { method: "DELETE" })
           );
           await Promise.all(deletePromises);
           await fetchAnnouncements();

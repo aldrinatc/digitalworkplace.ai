@@ -310,9 +310,9 @@ export default function AdminDashboardPage() {
     try {
       // Fetch real stats from APIs
       const [dashboardRes, usersRes, workflowsRes] = await Promise.all([
-        fetch('/api/dashboard'),
-        fetch('/api/people'),
-        fetch('/api/workflows'),
+        fetch('/diq/api/dashboard'),
+        fetch('/diq/api/people'),
+        fetch('/diq/api/workflows'),
       ]);
 
       const dashboardData = await dashboardRes.json();

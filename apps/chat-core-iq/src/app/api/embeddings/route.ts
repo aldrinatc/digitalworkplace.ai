@@ -15,7 +15,7 @@ import { validateAdminRequest, validateStrictAdminRequest } from '@/lib/api-auth
  */
 export async function POST(request: NextRequest) {
   // Require strict admin access for embedding generation (write operations)
-  const authError = validateStrictAdminRequest(request);
+  const authError = await validateStrictAdminRequest(request);
   if (authError) return authError;
 
   try {
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   // Require admin access to view embedding stats
-  const authError = validateAdminRequest(request);
+  const authError = await validateAdminRequest(request);
   if (authError) return authError;
 
   try {

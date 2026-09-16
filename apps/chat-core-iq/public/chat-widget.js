@@ -199,7 +199,7 @@
       quickActions: 'Quick Actions',
       transferCode: 'Have a transfer code?',
       transferCodeTitle: 'Continue Conversation',
-      transferCodePlaceholder: 'Enter 6-character code',
+      transferCodePlaceholder: 'Enter 12-character code',
       transferCodeButton: 'Continue',
       transferCodeCancel: 'Cancel',
       transferCodeSuccess: 'Conversation restored! You can continue where you left off.',
@@ -234,7 +234,7 @@
       quickActions: 'Acciones Rápidas',
       transferCode: '¿Tiene un código de transferencia?',
       transferCodeTitle: 'Continuar Conversación',
-      transferCodePlaceholder: 'Ingrese código de 6 caracteres',
+      transferCodePlaceholder: 'Ingrese código de 12 caracteres',
       transferCodeButton: 'Continuar',
       transferCodeCancel: 'Cancelar',
       transferCodeSuccess: '¡Conversación restaurada! Puede continuar donde lo dejó.',
@@ -269,7 +269,7 @@
       quickActions: 'Aksyon Rapid',
       transferCode: 'Ou gen yon kòd transfè?',
       transferCodeTitle: 'Kontinye Konvèsasyon',
-      transferCodePlaceholder: 'Antre kòd 6 karaktè',
+      transferCodePlaceholder: 'Antre kòd 12 karaktè',
       transferCodeButton: 'Kontinye',
       transferCodeCancel: 'Anile',
       transferCodeSuccess: 'Konvèsasyon retabli! Ou ka kontinye kote ou te rete a.',
@@ -1207,7 +1207,7 @@
           <input type="text"
                  class="doral-transfer-code-input"
                  placeholder="${labels.transferCodePlaceholder}"
-                 maxlength="6"
+                 maxlength="12"
                  autocomplete="off"
                  autocorrect="off"
                  autocapitalize="characters"
@@ -1285,7 +1285,7 @@
     elements.transferCodeInput.addEventListener('input', function() {
       const value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
       this.value = value;
-      elements.transferSubmitBtn.disabled = value.length !== 6;
+      elements.transferSubmitBtn.disabled = value.length !== 12;
       elements.transferError.textContent = '';
     });
     elements.transferCodeInput.addEventListener('keydown', function(e) {
@@ -1505,7 +1505,7 @@
     const code = elements.transferCodeInput.value.trim().toUpperCase();
     const labels = LABELS[state.language] || LABELS.en;
 
-    if (code.length !== 6) {
+    if (code.length !== 12) {
       elements.transferError.textContent = labels.transferCodeError;
       return;
     }
@@ -1613,7 +1613,7 @@
     } finally {
       // Reset button state
       elements.transferSubmitBtn.textContent = labels.transferCodeButton;
-      elements.transferSubmitBtn.disabled = elements.transferCodeInput.value.length !== 6;
+      elements.transferSubmitBtn.disabled = elements.transferCodeInput.value.length !== 12;
       elements.transferCodeInput.disabled = false;
     }
   }

@@ -53,7 +53,7 @@ async function saveKnowledgeBase(kb: KnowledgeBase): Promise<void> {
 // POST: Upload and parse document
 export async function POST(request: NextRequest) {
   // Require strict admin access for document uploads
-  const authError = validateStrictAdminRequest(request);
+  const authError = await validateStrictAdminRequest(request);
   if (authError) return authError;
 
   try {
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 // GET: List indexed documents
 export async function GET(request: NextRequest) {
   // Require admin access to list documents
-  const authError = validateAdminRequest(request);
+  const authError = await validateAdminRequest(request);
   if (authError) return authError;
 
   try {
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 // DELETE: Remove document from knowledge base
 export async function DELETE(request: NextRequest) {
   // Require strict admin access to delete documents
-  const authError = validateStrictAdminRequest(request);
+  const authError = await validateStrictAdminRequest(request);
   if (authError) return authError;
 
   try {

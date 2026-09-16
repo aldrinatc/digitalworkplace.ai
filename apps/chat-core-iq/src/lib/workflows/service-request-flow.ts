@@ -5,8 +5,7 @@
  * Handles category detection, detail collection, and confirmation.
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { listRoutingRules, persistServiceRequest } from '../server/workflow-store';
 import {
   getOrCreateState,
   advanceWorkflow,
@@ -54,43 +53,7 @@ export interface ServiceRequestFlowResponse {
   };
 }
 
-// Data file paths
-const DATA_DIR = path.join(process.cwd(), 'data');
-
-/**
- * Load routing rules from JSON file
- */
-async function loadRoutingRules(): Promise<RoutingRule[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'workflow-routing.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    console.error('Failed to load routing rules');
-    return [];
-  }
-}
-
-/**
- * Load existing service requests
- */
-async function loadServiceRequests(): Promise<ServiceRequest[]> {
-  try {
-    const filePath = path.join(DATA_DIR, 'service-requests.json');
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Save service requests to file
- */
-async function saveServiceRequests(requests: ServiceRequest[]): Promise<void> {
-  const filePath = path.join(DATA_DIR, 'service-requests.json');
-  await fs.writeFile(filePath, JSON.stringify(requests, null, 2), 'utf-8');
-}
+const loadRoutingRules = listRoutingRules;
 
 /**
  * Get active routing categories
@@ -110,39 +73,10 @@ export async function createServiceRequest(
     return null;
   }
 
-  const requests = await loadServiceRequests();
-
-  // Generate new ID
-  const now = new Date();
-  const year = now.getFullYear();
-  const maxId = requests.reduce((max, req) => {
-    const match = req.id.match(/SR-\d{4}-(\d+)/);
-    if (match) {
-      return Math.max(max, parseInt(match[1], 10));
-    }
-    return max;
-  }, 0);
-
-  const newRequest: ServiceRequest = {
-    id: `SR-${year}-${(maxId + 1).toString().padStart(5, '0')}`,
-    category: data.category,
-    department: data.department,
-    priority: data.priority || 'medium',
-    description: data.description,
-    location: data.location || '',
-    userName: data.userName,
-    userEmail: data.userEmail,
-    userPhone: data.userPhone,
-    status: 'submitted',
-    slaHours: getSLAHours(data.priority || 'medium'),
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString()
-  };
-
-  requests.push(newRequest);
-  await saveServiceRequests(requests);
-
-  return newRequest;
+  return persistServiceRequest({
+    category: data.category, department: data.department, priority: data.priority || 'medium', description: data.description, location: data.location || '',
+    userName: data.userName, userEmail: data.userEmail, userPhone: data.userPhone, status: 'submitted', slaHours: getSLAHours(data.priority || 'medium')
+  });
 }
 
 /**
@@ -479,7 +413,6 @@ export async function confirmServiceRequest(
  */
 export function cancelServiceRequestFlow(
   sessionId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _language: Language = 'en'
 ): ServiceRequestFlowResponse {
   clearWorkflow(sessionId);

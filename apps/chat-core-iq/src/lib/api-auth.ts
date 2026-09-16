@@ -1,90 +1,90 @@
-/**
- * API Authentication Helper
- * Provides authentication checks for admin API endpoints
- */
-
+/** Verify the shared workplace identity before accessing private administration. */
+import { timingSafeEqual } from 'node:crypto';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
+import { database } from './server/database';
 
-// Allowed origins for admin API requests
-const ALLOWED_ORIGINS = [
+const issuer = 'https://clerk.digitalworkplace.ai';
+const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`), {
+  timeoutDuration: 5000,
+});
+const origins = new Set([
   'https://dcq.digitalworkplace.ai',
   'https://www.digitalworkplace.ai',
+  'https://digitalworkplace.ai',
   'https://digitalworkplace-ai.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3002',
-];
-
-// Check if origin is allowed
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed));
+]);
+function matchesSecret(actual: string | null, expected: string | undefined) {
+  if (!actual || !expected) return false;
+  const a = Buffer.from(actual),
+    b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
-
-// Check if referer is from admin pages
-function isAdminReferer(referer: string | null): boolean {
-  if (!referer) return false;
+export async function validateAdminRequest(
+  request: NextRequest,
+  strict = false,
+): Promise<NextResponse | null> {
+  if (
+    matchesSecret(
+      request.headers.get('x-api-key'),
+      process.env.INTERNAL_API_KEY,
+    )
+  )
+    return null;
+  const origin = request.headers.get('origin');
+  if (
+    origin &&
+    !origins.has(origin) &&
+    !(
+      process.env.NODE_ENV !== 'production' &&
+      /^http:\/\/localhost:\d+$/.test(origin)
+    )
+  ) {
+    return NextResponse.json(
+      { error: 'Untrusted request origin' },
+      { status: 403 },
+    );
+  }
+  const token =
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    request.cookies.get('__session')?.value;
+  if (!token)
+    return NextResponse.json(
+      { error: 'Sign in to Digital Workplace to manage this app' },
+      { status: 401 },
+    );
   try {
-    const url = new URL(referer);
-    return url.pathname.includes('/admin') || url.pathname.includes('/dcq/admin');
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer,
+      algorithms: ['RS256'],
+    });
+    if (!payload.sub || (payload.azp && !origins.has(String(payload.azp))))
+      return NextResponse.json(
+        { error: 'Invalid workplace session' },
+        { status: 401 },
+      );
+    const allowed = strict
+      ? ['admin', 'owner', 'super_admin']
+      : ['admin', 'owner', 'super_admin', 'editor'];
+    const rows = await database()`select exists (
+      select 1 from public.users u where u.clerk_id=${payload.sub}
+        and (u.role = any(${['admin', 'super_admin']}::text[]) or exists (
+          select 1 from public.user_project_access a join public.projects p on p.id=a.project_id
+          where a.user_id=u.id and lower(p.code)='dcq' and a.role=any(${allowed}::text[])
+        ))
+    ) as allowed`;
+    if (rows[0]?.allowed) return null;
+    return NextResponse.json(
+      { error: 'Chat Core administrator access is required' },
+      { status: 403 },
+    );
   } catch {
-    return false;
+    return NextResponse.json(
+      { error: 'Could not verify the workplace session' },
+      { status: 401 },
+    );
   }
 }
-
-/**
- * Validate admin API request
- * Returns null if authorized, or an error response if not
- */
-export function validateAdminRequest(request: NextRequest): NextResponse | null {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-  const apiKey = request.headers.get('x-api-key');
-
-  // Check for internal API key (for server-to-server calls)
-  const internalApiKey = process.env.INTERNAL_API_KEY;
-  if (internalApiKey && apiKey === internalApiKey) {
-    return null; // Authorized
-  }
-
-  // Check origin/referer for browser requests from allowed domains
-  if (isAllowedOrigin(origin) || isAllowedOrigin(referer)) {
-    // Additional check: ensure it's from admin pages for sensitive operations
-    if (isAdminReferer(referer)) {
-      return null; // Authorized
-    }
-    // Allow if from allowed origin even without admin referer (for some operations)
-    return null;
-  }
-
-  // Unauthorized
-  return NextResponse.json(
-    { error: 'Unauthorized: Admin access required' },
-    { status: 401 }
-  );
-}
-
-/**
- * Validate admin request with strict admin page check
- * Use this for sensitive operations like batch embedding generation
- */
-export function validateStrictAdminRequest(request: NextRequest): NextResponse | null {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-  const apiKey = request.headers.get('x-api-key');
-
-  // Check for internal API key
-  const internalApiKey = process.env.INTERNAL_API_KEY;
-  if (internalApiKey && apiKey === internalApiKey) {
-    return null;
-  }
-
-  // Must be from allowed origin AND admin page
-  if ((isAllowedOrigin(origin) || isAllowedOrigin(referer)) && isAdminReferer(referer)) {
-    return null;
-  }
-
-  return NextResponse.json(
-    { error: 'Unauthorized: Admin access required' },
-    { status: 401 }
-  );
+export function validateStrictAdminRequest(request: NextRequest) {
+  return validateAdminRequest(request, true);
 }

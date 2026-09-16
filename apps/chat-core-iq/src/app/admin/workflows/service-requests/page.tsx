@@ -117,7 +117,7 @@ export default function ServiceRequestsPage() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/workflows/routing?id=${rule.id}`, {
+          const res = await fetch(`/dcq/api/workflows/routing?id=${rule.id}`, {
             method: "DELETE",
           });
           if (res.ok) {

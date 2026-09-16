@@ -417,7 +417,7 @@ export default function ContentManagement() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/admin/knowledge?id=${id}`, {
+          const response = await fetch(`/dcq/api/admin/knowledge?id=${id}`, {
             method: "DELETE",
           });
 
@@ -685,7 +685,7 @@ export default function ContentManagement() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/faqs?id=${id}`, {
+          const response = await fetch(`/dcq/api/faqs?id=${id}`, {
             method: "DELETE",
           });
           if (response.ok) {
@@ -730,7 +730,7 @@ export default function ContentManagement() {
       onConfirm: async () => {
         try {
           const deletePromises = Array.from(selectedIds).map((id) =>
-            fetch(`/api/faqs?id=${id}`, { method: "DELETE" })
+            fetch(`/dcq/api/faqs?id=${id}`, { method: "DELETE" })
           );
           await Promise.all(deletePromises);
           await fetchFaqs();
@@ -904,7 +904,7 @@ export default function ContentManagement() {
       variant: "danger",
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/admin/documents?id=${encodeURIComponent(id)}`, {
+          const response = await fetch(`/dcq/api/admin/documents?id=${encodeURIComponent(id)}`, {
             method: "DELETE",
           });
           if (response.ok) {
@@ -930,7 +930,7 @@ export default function ContentManagement() {
       onConfirm: async () => {
         try {
           for (const docId of selectedDocIds) {
-            await fetch(`/api/admin/documents?id=${encodeURIComponent(docId)}`, {
+            await fetch(`/dcq/api/admin/documents?id=${encodeURIComponent(docId)}`, {
               method: "DELETE",
             });
           }
@@ -949,7 +949,7 @@ export default function ContentManagement() {
   const fetchCrawlerUrls = useCallback(async (lang: KBLanguage = "en") => {
     setCrawlerLoading(true);
     try {
-      const response = await fetch(`/api/admin/crawler/urls?lang=${lang}`);
+      const response = await fetch(`/dcq/api/admin/crawler/urls?lang=${lang}`);
       if (response.ok) {
         const data = await response.json();
         setCrawlerUrls(data.urls || []);
