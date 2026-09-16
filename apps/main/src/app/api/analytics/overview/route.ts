@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminDatabase } from '@/lib/server/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getAdminDatabase();
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Check if user is super_admin
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('role').throwOnError()
       .eq('clerk_id', clerkId)
       .single();
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Get total users
     const { count: totalUsers } = await supabaseAdmin
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true }).throwOnError();
 
     // Get active users in different time windows
     const now = new Date();
@@ -39,17 +40,17 @@ export async function GET(request: NextRequest) {
 
     const { data: sessions24h } = await supabaseAdmin
       .from('user_sessions')
-      .select('user_id')
+      .select('user_id').throwOnError()
       .gte('last_heartbeat_at', day1);
 
     const { data: sessions7d } = await supabaseAdmin
       .from('user_sessions')
-      .select('user_id')
+      .select('user_id').throwOnError()
       .gte('last_heartbeat_at', day7);
 
     const { data: sessions30d } = await supabaseAdmin
       .from('user_sessions')
-      .select('user_id')
+      .select('user_id').throwOnError()
       .gte('last_heartbeat_at', day30);
 
     const active24h = new Set(sessions24h?.map(s => s.user_id) || []).size;
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Get session stats
     const { data: sessionStats } = await supabaseAdmin
       .from('user_sessions')
-      .select('id, duration_seconds')
+      .select('id, duration_seconds').throwOnError()
       .gte('started_at', start)
       .lte('started_at', end);
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
     // Get page view count
     const { count: totalPageViews } = await supabaseAdmin
       .from('page_views')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true }).throwOnError()
       .gte('entered_at', start)
       .lte('entered_at', end);
 

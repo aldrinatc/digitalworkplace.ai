@@ -12,7 +12,8 @@ const isPublicRoute = createRouteMatcher([
   '/sso-callback(.*)',
   '/icon(.*)',
   '/apple-icon(.*)',
-  // Analytics tracking endpoint for sendBeacon (can't set auth headers)
+  '/api/health/database',
+  // Let tracking handlers return JSON and check the Clerk cookie themselves.
   '/api/tracking/session/end',
   // Allow cross-origin tracking from sub-apps
   '/api/tracking/pageview',

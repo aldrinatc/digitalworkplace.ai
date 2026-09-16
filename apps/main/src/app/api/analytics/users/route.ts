@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminDatabase } from '@/lib/server/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getAdminDatabase();
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Check if user is super_admin
     const { data: currentUser } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('role').throwOnError()
       .eq('clerk_id', clerkId)
       .single();
 
@@ -32,15 +33,15 @@ export async function GET(request: NextRequest) {
     const [usersResult, sessionsResult, pageViewsResult] = await Promise.all([
       supabaseAdmin
         .from('users')
-        .select('id, email, full_name, role, created_at'),
+        .select('id, email, full_name, role, created_at').throwOnError(),
       supabaseAdmin
         .from('user_sessions')
-        .select('user_id, duration_seconds, last_heartbeat_at, is_active')
+        .select('user_id, duration_seconds, last_heartbeat_at, is_active').throwOnError()
         .gte('started_at', start)
         .lte('started_at', end),
       supabaseAdmin
         .from('page_views')
-        .select('user_id, project_code, time_on_page_seconds')
+        .select('user_id, project_code, time_on_page_seconds').throwOnError()
         .gte('entered_at', start)
         .lte('entered_at', end),
     ]);

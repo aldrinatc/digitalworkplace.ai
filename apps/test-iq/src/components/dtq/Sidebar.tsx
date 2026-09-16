@@ -240,7 +240,7 @@ export default memo(function Sidebar({ persona, onPersonaChange }: SidebarProps)
         >
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full animate-pulse-dot" style={{ background: 'var(--status-success)' }} />
-            <span>Live Dashboard</span>
+            <span>Demo Dashboard</span>
           </div>
         </motion.div>
 
@@ -270,7 +270,7 @@ export default memo(function Sidebar({ persona, onPersonaChange }: SidebarProps)
           }}
         >
           <Cloud className="w-3.5 h-3.5" style={{ color: 'var(--accent-primary)' }} />
-          <span className="flex-1 text-left">Deployed: Cloud (AWS)</span>
+          <span className="flex-1 text-left">Deployment options</span>
           <ChevronRight className="w-3 h-3" />
         </motion.button>
       </div>

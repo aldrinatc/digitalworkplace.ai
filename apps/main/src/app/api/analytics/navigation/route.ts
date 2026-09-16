@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminDatabase } from '@/lib/server/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getAdminDatabase();
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Check if user is super_admin
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('role').throwOnError()
       .eq('clerk_id', clerkId)
       .single();
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Fetch app usage breakdown
     const { data: pageViews } = await supabaseAdmin
       .from('page_views')
-      .select('project_code, user_id, time_on_page_seconds')
+      .select('project_code, user_id, time_on_page_seconds').throwOnError()
       .gte('entered_at', start)
       .lte('entered_at', end);
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Fetch cross-app navigation flows
     const { data: navigations } = await supabaseAdmin
       .from('cross_app_navigation')
-      .select('from_project_code, to_project_code, time_in_source_seconds')
+      .select('from_project_code, to_project_code, time_in_source_seconds').throwOnError()
       .gte('navigated_at', start)
       .lte('navigated_at', end);
 
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
         started_at,
         ended_at,
         users!inner(email, full_name)
-      `)
+      `).throwOnError()
       .gte('started_at', start)
       .order('started_at', { ascending: false })
       .limit(20);
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
         page_path,
         entered_at,
         users!inner(email, full_name)
-      `)
+      `).throwOnError()
       .gte('entered_at', start)
       .order('entered_at', { ascending: false })
       .limit(20);
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
         to_project_code,
         navigated_at,
         users!inner(email, full_name)
-      `)
+      `).throwOnError()
       .gte('navigated_at', start)
       .order('navigated_at', { ascending: false })
       .limit(15);

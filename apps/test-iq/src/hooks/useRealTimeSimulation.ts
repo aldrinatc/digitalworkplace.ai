@@ -5,6 +5,7 @@ import { TestRun, Feature, DailyMetric, TestIssue, Persona, PersonaType } from '
 import {
   personas as fallbackPersonas,
 } from '@/lib/dtq/data';
+import { readDemoRuns, mergeDemoRuns, demoHistoryEvent } from '@/lib/dtq/demo-history';
 import { getPersonaData } from '@/lib/dtq/persona-data';
 
 // Realistic error messages for failed tests
@@ -90,10 +91,21 @@ export function useRealTimeSimulation(enabled: boolean = true, persona: PersonaT
     queueMicrotask(() => {
       featuresRef.current = data.features;
       setFeatures(data.features);
-      setTestRuns(data.testRuns);
+      setTestRuns(mergeDemoRuns(readDemoRuns(persona), data.testRuns));
       setDailyMetrics(data.dailyMetrics);
       setLastUpdate(new Date());
     });
+  }, [persona]);
+
+  // Explicit console runs survive navigation and reload; ambient animation stays transient.
+  useEffect(() => {
+    const sync = () => setTestRuns((previous) => mergeDemoRuns(readDemoRuns(persona), previous));
+    window.addEventListener(demoHistoryEvent, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(demoHistoryEvent, sync);
+      window.removeEventListener('storage', sync);
+    };
   }, [persona]);
 
   // Simulate new test runs appearing — uses ref to avoid dependency cascade
@@ -178,7 +190,7 @@ export function useRealTimeSimulation(enabled: boolean = true, persona: PersonaT
   // Add test runs from execution console
   const addTestRuns = useCallback((runs: TestRun[]) => {
     startTransition(() => {
-      setTestRuns((prev) => [...runs, ...prev].slice(0, 50));
+      setTestRuns((prev) => mergeDemoRuns(runs, prev));
       setLastUpdate(new Date());
     });
   }, []);

@@ -18,6 +18,7 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts --no-audit --workspaces=false
       - run: node --experimental-strip-types --test scripts/ai-runtime.test.mjs
+      - run: node --import tsx --test scripts/main-workplace.test.ts scripts/testpilot-demo-history.test.ts
   production-health:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

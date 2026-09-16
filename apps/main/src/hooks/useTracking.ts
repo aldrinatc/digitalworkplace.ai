@@ -8,6 +8,8 @@ import {
   endPageView,
   setupBeaconTracking,
   setCurrentSessionId,
+  trackPageView,
+  stopHeartbeat,
   CrossAppNavigation,
 } from '@/lib/tracking';
 
@@ -22,11 +24,11 @@ interface TrackingState {
   isTracking: boolean;
 }
 
-const SESSION_KEY = 'dw_analytics_session';
 
 export function useTracking({ projectCode, enabled = true }: UseTrackingOptions) {
   const { user, isLoaded } = useUser();
   const pathname = usePathname();
+  const clerkId = user?.id;
   // Use useState for values returned to components (must not access ref during render)
   const [trackingState, setTrackingState] = useState<TrackingState>({
     sessionId: null,
@@ -73,40 +75,29 @@ export function useTracking({ projectCode, enabled = true }: UseTrackingOptions)
 
   // Initialize session
   useEffect(() => {
-    if (!enabled || !isLoaded || !user) return;
+    if (!enabled || !isLoaded || !clerkId) return;
 
+    let cancelled = false;
+    let removeBeacon: (() => void) | undefined;
     const initSession = async () => {
-      // Check for existing session in localStorage
-      const storedSession = localStorage.getItem(SESSION_KEY);
-      if (storedSession) {
-        try {
-          const { sessionId, userId, expiresAt } = JSON.parse(storedSession);
-          if (new Date(expiresAt) > new Date() && userId === user.id) {
-            // Resume existing session
-            setCurrentSessionId(sessionId);
-            const newState = { sessionId, userId, isTracking: true };
-            stateRef.current = newState;
-            setTrackingState(newState);
-            return;
-          }
-        } catch {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      }
-
       // Get user ID from Supabase
       const response = await fetch('/api/tracking/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'start',
-          clerkId: user.id,
+          clerkId,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        if (cancelled) {
+          if (data.sessionId) await endSession(data.sessionId);
+          return;
+        }
         if (data.sessionId && data.userId) {
+          setCurrentSessionId(data.sessionId);
           const newState = {
             sessionId: data.sessionId,
             userId: data.userId,
@@ -115,29 +106,23 @@ export function useTracking({ projectCode, enabled = true }: UseTrackingOptions)
           stateRef.current = newState;
           setTrackingState(newState);
 
-          // Store session with 24h expiry
-          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-          localStorage.setItem(SESSION_KEY, JSON.stringify({
-            sessionId: data.sessionId,
-            userId: data.userId,
-            expiresAt: expiresAt.toISOString(),
-          }));
-
-          // Setup beacon for session end
-          setupBeaconTracking(data.userId, data.sessionId);
+          removeBeacon = setupBeaconTracking(data.userId, data.sessionId);
         }
       }
     };
 
-    initSession();
+    initSession().catch(() => console.warn('Workplace tracking is temporarily unavailable'));
 
     // Cleanup on unmount
     return () => {
+      cancelled = true;
+      removeBeacon?.();
+      stopHeartbeat();
       if (stateRef.current.sessionId) {
-        endPageView(scrollDepthRef.current, clickCountRef.current);
+        void endPageView(scrollDepthRef.current, clickCountRef.current).catch(() => {});
       }
     };
-  }, [enabled, isLoaded, user]);
+  }, [enabled, isLoaded, clerkId]);
 
   // Track page views on pathname change
   useEffect(() => {
@@ -156,25 +141,15 @@ export function useTracking({ projectCode, enabled = true }: UseTrackingOptions)
 
       // Track new page view
       if (stateRef.current.userId) {
-        await fetch('/api/tracking/pageview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: stateRef.current.userId,
-            sessionId: stateRef.current.sessionId,
-            projectCode,
-            pagePath: pathname,
-            pageTitle: document.title,
-            referrer: lastPathRef.current ? `${projectCode}:${lastPathRef.current}` : document.referrer,
-          }),
-        });
+        await trackPageView(stateRef.current.userId, projectCode, pathname, document.title,
+          lastPathRef.current ? `${projectCode}:${lastPathRef.current}` : document.referrer);
       }
 
       lastPathRef.current = pathname;
     };
 
-    trackView();
-  }, [enabled, pathname, projectCode]);
+    trackView().catch(() => console.warn('Page tracking is temporarily unavailable'));
+  }, [enabled, pathname, projectCode, trackingState.isTracking]);
 
   // Manual navigation tracking function
   const trackNavigation = useCallback(async (navigation: Omit<CrossAppNavigation, 'from_project_code' | 'from_page_path'>) => {
@@ -199,7 +174,7 @@ export function useTracking({ projectCode, enabled = true }: UseTrackingOptions)
 
     await endPageView(scrollDepthRef.current, clickCountRef.current);
     await endSession(stateRef.current.sessionId);
-    localStorage.removeItem(SESSION_KEY);
+
     const newState = { sessionId: null, userId: null, isTracking: false };
     stateRef.current = newState;
     setTrackingState(newState);

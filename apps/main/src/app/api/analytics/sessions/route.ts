@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminDatabase } from '@/lib/server/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getAdminDatabase();
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Check if user is super_admin
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('role').throwOnError()
       .eq('clerk_id', clerkId)
       .single();
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
         os,
         is_active,
         users!inner(email, full_name)
-      `)
+      `).throwOnError()
       .gte('started_at', start)
       .lte('started_at', end)
       .order('started_at', { ascending: false })
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
     // Get total count
     const { count } = await supabaseAdmin
       .from('user_sessions')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true }).throwOnError()
       .gte('started_at', start)
       .lte('started_at', end);
 

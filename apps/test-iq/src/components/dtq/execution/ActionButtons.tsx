@@ -10,9 +10,11 @@ interface ActionButtonsProps {
   selectedCount: number;
   onExecute: () => void;
   onReset: () => void;
+  onQueue: () => void;
+  onSchedule: () => void;
 }
 
-export default memo(function ActionButtons({ phase, selectedCount, onExecute, onReset }: ActionButtonsProps) {
+export default memo(function ActionButtons({ phase, selectedCount, onExecute, onReset, onQueue, onSchedule }: ActionButtonsProps) {
   const canExecute = phase === 'idle' && selectedCount > 0;
 
   return (
@@ -30,7 +32,7 @@ export default memo(function ActionButtons({ phase, selectedCount, onExecute, on
           whileTap={{ scale: 0.98 }}
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          New Execution
+          New Simulation
         </motion.button>
       ) : (
         <>
@@ -49,10 +51,11 @@ export default memo(function ActionButtons({ phase, selectedCount, onExecute, on
             whileTap={canExecute ? { scale: 0.98 } : {}}
           >
             <Play className="w-3.5 h-3.5" />
-            Execute ({selectedCount})
+            Simulate ({selectedCount})
           </motion.button>
 
           <motion.button
+            onClick={onQueue}
             disabled={!canExecute}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
@@ -67,6 +70,7 @@ export default memo(function ActionButtons({ phase, selectedCount, onExecute, on
           </motion.button>
 
           <motion.button
+            onClick={onSchedule}
             disabled={!canExecute}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{

@@ -55,6 +55,7 @@ export default function AnalyticsPage() {
   const { signOut } = useClerk();
   const router = useRouter();
   const [currentUserData, setCurrentUserData] = useState<UserData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
@@ -72,6 +73,7 @@ export default function AnalyticsPage() {
     appUsage,
     crossAppFlow,
     loading: analyticsLoading,
+    error: analyticsError,
     refresh,
     setDateRange,
   } = useAnalytics({ autoRefresh: true, refreshInterval: 60000 }); // Changed to 60s
@@ -100,7 +102,10 @@ export default function AnalyticsPage() {
     };
 
     if (user) {
-      fetchData();
+      fetchData().catch((error) => {
+        setLoadError(error instanceof Error ? error.message : 'Unable to load workplace data');
+        setLoading(false);
+      });
     }
   }, [user, isLoaded, router]);
 
@@ -166,6 +171,10 @@ export default function AnalyticsPage() {
     return `${days}d ago`;
   };
 
+  if (loadError) return <div role="alert" className="min-h-screen bg-[#0f0f1a] text-white p-8">
+    <p>{loadError}</p><button className="mt-4 underline" onClick={() => window.location.reload()}>Try again</button>
+  </div>;
+
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
@@ -182,6 +191,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-[#0f0f1a]">
+      {analyticsError && <p role="alert" className="bg-red-950 text-red-100 px-4 py-3">{analyticsError}</p>}
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0f0f1a]/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">

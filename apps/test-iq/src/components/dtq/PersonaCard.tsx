@@ -125,7 +125,7 @@ export default memo(function PersonaCard({ persona }: PersonaCardProps) {
           >
             <div className="w-2 h-2 rounded-full animate-pulse-dot" style={{ background: 'var(--status-success)' }} />
             <span className="text-xs font-medium" style={{ color: 'var(--status-success)' }}>
-              Live Dashboard
+              Demo Dashboard
             </span>
           </motion.div>
         </div>

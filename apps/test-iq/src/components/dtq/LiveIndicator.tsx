@@ -38,8 +38,8 @@ export default function LiveIndicator({ lastUpdate, isLive, onToggle }: LiveIndi
       color: 'var(--status-success)',
       bg: 'rgba(52, 211, 153, 0.15)',
       border: 'rgba(52, 211, 153, 0.3)',
-      label: 'Live',
-      description: 'Real-time data streaming',
+      label: 'Simulation',
+      description: 'Synthetic demo updates',
     },
     stale: {
       color: 'var(--status-warning)',
@@ -53,7 +53,7 @@ export default function LiveIndicator({ lastUpdate, isLive, onToggle }: LiveIndi
       bg: 'rgba(248, 113, 113, 0.15)',
       border: 'rgba(248, 113, 113, 0.3)',
       label: 'Paused',
-      description: 'Real-time updates paused',
+      description: 'Demo updates paused',
     },
   };
 

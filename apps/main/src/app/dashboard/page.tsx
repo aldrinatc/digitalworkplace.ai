@@ -5,7 +5,7 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { getUserByEmail, syncUserWithClerk, UserData } from "@/lib/userRole";
+import { syncUserWithClerk, UserData } from "@/lib/userRole";
 
 // Product URLs - local vs production
 const getProductUrl = (localUrl: string, prodUrl: string) => {
@@ -101,6 +101,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
@@ -115,15 +116,12 @@ export default function DashboardPage() {
       if (!user?.primaryEmailAddress?.emailAddress) return;
 
       // Sync returns the user data, no need for second call
-      const data = await syncUserWithClerk(
-        user.primaryEmailAddress.emailAddress,
-        user.id,
-        user.fullName || undefined,
-        user.imageUrl || undefined
-      );
-
-      if (data) {
+      try {
+        const data = await syncUserWithClerk();
         setUserData(data);
+        setSyncError(null);
+      } catch (error) {
+        setSyncError(error instanceof Error ? error.message : 'Unable to sync your workplace account');
       }
     };
 
@@ -158,6 +156,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0f0f1a]">
+      {syncError && <p role="alert" className="bg-red-950 text-red-100 px-4 py-3">{syncError}</p>}
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0f0f1a]/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">

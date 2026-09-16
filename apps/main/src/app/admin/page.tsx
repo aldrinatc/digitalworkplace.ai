@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const { signOut } = useClerk();
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserData, setCurrentUserData] = useState<UserData | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "settings">("overview");
@@ -44,22 +45,29 @@ export default function AdminDashboard() {
     };
 
     if (user) {
-      fetchData();
+      fetchData().catch((error) => {
+        setLoadError(error instanceof Error ? error.message : 'Unable to load workplace data');
+        setLoading(false);
+      });
     }
   }, [user, isLoaded, router]);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    const success = await updateUserRole(userId, newRole);
-    if (success) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-      );
+    try {
+      const updated = await updateUserRole(userId, newRole);
+      setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Role change failed');
     }
   };
 
   const handleSignOut = () => {
     signOut({ redirectUrl: "/sign-in" });
   };
+
+  if (loadError) return <div role="alert" className="min-h-screen bg-[#0f0f1a] text-white p-8">
+    <p>{loadError}</p><button className="mt-4 underline" onClick={() => window.location.reload()}>Try again</button>
+  </div>;
 
   if (!isLoaded || loading) {
     return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, createContext, useContext, useMemo } from 'react';
+import { useState, createContext, useContext, useMemo, useEffect, useCallback } from 'react';
 import Sidebar from '@/components/dtq/Sidebar';
 import { PersonaType } from '@/lib/dtq/types';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -24,8 +24,18 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [persona, setPersona] = useState<PersonaType>('manager');
-  const contextValue = useMemo(() => ({ persona, setPersona }), [persona]);
+  const [persona, updatePersona] = useState<PersonaType>('manager');
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('dtq-demo-persona');
+      if (saved === 'csuite' || saved === 'manager' || saved === 'techlead') queueMicrotask(() => updatePersona(saved));
+    } catch { /* Demo remains usable when browser storage is unavailable. */ }
+  }, []);
+  const setPersona = useCallback((next: PersonaType) => {
+    updatePersona(next);
+    try { sessionStorage.setItem('dtq-demo-persona', next); } catch { /* Session-only preference. */ }
+  }, []);
+  const contextValue = useMemo(() => ({ persona, setPersona }), [persona, setPersona]);
 
   return (
     <PersonaContext.Provider value={contextValue}>

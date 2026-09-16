@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminDatabase } from '@/lib/server/supabase';
 
 export interface ActiveUserDetail {
   user_id: string;
@@ -30,6 +30,7 @@ export interface ActiveUserDetail {
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getAdminDatabase();
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Check if user is super_admin
     const { data: currentUser } = await supabaseAdmin
       .from('users')
-      .select('role')
+      .select('role').throwOnError()
       .eq('clerk_id', clerkId)
       .single();
 
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
         ip_address,
         is_active,
         users!inner(id, email, full_name, avatar_url, role)
-      `)
+      `).throwOnError()
       .gte('last_heartbeat_at', timeFilter.toISOString())
       .order('last_heartbeat_at', { ascending: false });
 
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     const sessionIds = activeSessions?.map(s => s.id) || [];
     const { data: pageViews } = await supabaseAdmin
       .from('page_views')
-      .select('session_id, project_code, page_path, entered_at')
+      .select('session_id, project_code, page_path, entered_at').throwOnError()
       .in('session_id', sessionIds)
       .order('entered_at', { ascending: false });
 
